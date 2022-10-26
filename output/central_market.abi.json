@@ -10,7 +10,7 @@
         "contractCrate": {
             "name": "central_market",
             "version": "0.0.0",
-            "git_version": "5b25988-modified"
+            "git_version": "ef37130-modified"
         },
         "framework": {
             "name": "elrond-wasm",
@@ -24,37 +24,41 @@
     },
     "endpoints": [
         {
-            "name": "setFundReceiver",
+            "name": "setFees",
             "onlyOwner": true,
             "mutability": "mutable",
             "inputs": [
                 {
-                    "name": "address",
-                    "type": "Address"
+                    "name": "adder_fee",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "accepter_fee",
+                    "type": "BigUint"
                 }
             ],
             "outputs": []
         },
         {
-            "name": "addToWhitelist",
+            "name": "addAcceptedToken",
             "onlyOwner": true,
             "mutability": "mutable",
             "inputs": [
                 {
-                    "name": "address",
-                    "type": "Address"
+                    "name": "token_id",
+                    "type": "EgldOrEsdtTokenIdentifier"
                 }
             ],
             "outputs": []
         },
         {
-            "name": "removeFromWhitelist",
+            "name": "addAcceptedPayment",
             "onlyOwner": true,
             "mutability": "mutable",
             "inputs": [
                 {
-                    "name": "address",
-                    "type": "Address"
+                    "name": "token_id",
+                    "type": "EgldOrEsdtTokenIdentifier"
                 }
             ],
             "outputs": []
@@ -167,27 +171,6 @@
             "outputs": [
                 {
                     "type": "u32"
-                }
-            ]
-        },
-        {
-            "name": "getUniqueFundReceiver",
-            "mutability": "readonly",
-            "inputs": [],
-            "outputs": [
-                {
-                    "type": "Address"
-                }
-            ]
-        },
-        {
-            "name": "offerAddingWhitelist",
-            "mutability": "readonly",
-            "inputs": [],
-            "outputs": [
-                {
-                    "type": "variadic<Address>",
-                    "multi_result": true
                 }
             ]
         },

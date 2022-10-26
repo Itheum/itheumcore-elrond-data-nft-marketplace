@@ -8,14 +8,12 @@ elrond_wasm_node::wasm_endpoints! {
     central_market
     (
         acceptOffer
+        addAcceptedPayment
+        addAcceptedToken
         addOffer
-        addToWhitelist
         cancelOffer
-        getUniqueFundReceiver
         numberOfOffers
-        offerAddingWhitelist
-        removeFromWhitelist
-        setFundReceiver
+        setFees
         togglePause
         viewEmptyOfferIndexes
         viewHighestOfferIndex

@@ -24,27 +24,37 @@ pub struct OfferOut<M: ManagedTypeApi> {
     pub quantity: BigUint<M>,
 }
 
+#[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Clone, Debug, TypeAbi)]
+pub struct DataNftAttributes<M: ManagedTypeApi> {
+    pub data_stream_url: ManagedBuffer<M>,
+    pub data_preview_url: ManagedBuffer<M>,
+    pub data_marchal_url: ManagedBuffer<M>,
+    pub creator: ManagedAddress<M>,
+    pub creation_time: u64,
+}
+
 #[elrond_wasm::contract]
 pub trait CentralMarket {
     #[init]
     fn init(&self) {}
 
     #[only_owner]
-    #[endpoint(setFundReceiver)]
-    fn set_fund_receiver(&self, address: ManagedAddress) {
-        self.unique_fund_receiver().set(&address);
+    #[endpoint(setFees)]
+    fn set_fees(&self, adder_fee: BigUint, accepter_fee: BigUint) {
+        self.percentage_from_accepter_to_owner().set(&accepter_fee);
+        self.percentage_from_adder_to_owner().set(&adder_fee);
     }
 
     #[only_owner]
-    #[endpoint(addToWhitelist)]
-    fn add_to_whitelist(&self, address: ManagedAddress) {
-        self.offer_adding_whitelist().insert(address);
+    #[endpoint(addAcceptedToken)]
+    fn add_accepted_token(&self, token_id: EgldOrEsdtTokenIdentifier) {
+        self.accepted_tokens().insert(token_id);
     }
 
     #[only_owner]
-    #[endpoint(removeFromWhitelist)]
-    fn remove_from_whitelist(&self, address: ManagedAddress) {
-        self.offer_adding_whitelist().remove(&address);
+    #[endpoint(addAcceptedPayment)]
+    fn add_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier) {
+        self.accepted_payments().insert(token_id);
     }
 
     #[only_owner]
@@ -64,12 +74,16 @@ pub trait CentralMarket {
     ) -> u64 {
         require!(!self.paused().get(), "Contract is paused");
         let caller = self.blockchain().get_caller();
-        let sc_owner = self.blockchain().get_owner_address();
-        require!(
-            self.offer_adding_whitelist().contains(&caller) || &caller == &sc_owner,
-            "Not whitelisted to add offers to market"
-        );
         let mut token_offered = self.call_value().egld_or_single_esdt();
+        require!(
+            self.accepted_payments().contains(&wanted_token_id),
+            "Token not accepted"
+        );
+        require!(
+            self.accepted_tokens()
+                .contains(&token_offered.token_identifier),
+            "Token not accepted"
+        );
         let token_wanted =
             EgldOrEsdtTokenPayment::new(wanted_token_id, wanted_token_nonce, wanted_token_amount);
         let mut real_amount = token_offered.amount.clone();
@@ -105,9 +119,7 @@ pub trait CentralMarket {
 
         if let Some(offer) = moffer {
             require!(
-                &caller == &offer.owner
-                    || &caller == &sc_owner
-                    || self.offer_adding_whitelist().contains(&caller),
+                &caller == &offer.owner || &caller == &sc_owner,
                 "Only special addresses can cancel offers"
             );
             self.send().direct(
@@ -133,7 +145,11 @@ pub trait CentralMarket {
         let payment = self.call_value().egld_or_single_esdt();
 
         if let Some(mut offer) = moffer {
-            let correct_payment_amount = &offer.wanted_token.amount * &quantity;
+            let accepter_fee = self.percentage_from_accepter_to_owner().get();
+            let adder_fee = self.percentage_from_adder_to_owner().get();
+            let mut correct_payment_amount = &offer.wanted_token.amount * &quantity;
+            correct_payment_amount +=
+                &correct_payment_amount * &accepter_fee / BigUint::from(10000u64);
             require!(offer.quantity >= quantity, "Not enough quantity");
             require!(
                 payment.token_identifier == offer.wanted_token.token_identifier,
@@ -147,22 +163,13 @@ pub trait CentralMarket {
                 payment.amount == correct_payment_amount,
                 "Wrong token payment"
             );
-            let fund_receiver = self.unique_fund_receiver();
-            if fund_receiver.is_empty() {
-                self.send().direct(
-                    &offer.owner,
-                    &offer.wanted_token.token_identifier,
-                    offer.wanted_token.token_nonce,
-                    &correct_payment_amount,
-                );
-            } else {
-                self.send().direct(
-                    &fund_receiver.get(),
-                    &offer.wanted_token.token_identifier,
-                    offer.wanted_token.token_nonce,
-                    &correct_payment_amount,
-                );
-            }
+            self.send().direct(
+                &offer.owner,
+                &offer.wanted_token.token_identifier,
+                offer.wanted_token.token_nonce,
+                &(&correct_payment_amount
+                    - &(&correct_payment_amount * &adder_fee / &BigUint::from(10000u64))),
+            );
 
             self.send().direct(
                 &caller,
@@ -194,7 +201,12 @@ pub trait CentralMarket {
         }
     }
 
-    fn offer_to_offer_out(&self, index: u64, offer: Offer<Self::Api>) -> OfferOut<Self::Api> {
+    fn offer_to_offer_out(
+        &self,
+        index: u64,
+        offer: Offer<Self::Api>,
+        fee: &BigUint,
+    ) -> OfferOut<Self::Api> {
         OfferOut {
             index: index,
             owner: offer.owner,
@@ -203,7 +215,8 @@ pub trait CentralMarket {
             offered_token_amount: offer.offered_token.amount,
             wanted_token_identifier: offer.wanted_token.token_identifier,
             wanted_token_nonce: offer.wanted_token.token_nonce,
-            wanted_token_amount: offer.wanted_token.amount,
+            wanted_token_amount: offer.wanted_token.amount * (fee + &BigUint::from(10000u64))
+                / BigUint::from(10000u64),
             quantity: offer.quantity,
         }
     }
@@ -212,10 +225,11 @@ pub trait CentralMarket {
     fn view_offers(&self, from: u64, to: u64) -> ManagedVec<OfferOut<Self::Api>> {
         let mut offers = ManagedVec::new();
         let mut nr = 0;
+        let fee = self.percentage_from_accepter_to_owner().get();
         for (index, offer) in self.offers().iter() {
             if nr >= from {
                 if nr < to {
-                    offers.push(self.offer_to_offer_out(index, offer));
+                    offers.push(self.offer_to_offer_out(index, offer, &fee));
                 } else {
                     break;
                 }
@@ -228,8 +242,9 @@ pub trait CentralMarket {
     #[view(viewOffer)]
     fn view_offer(&self, index: u64) -> Option<OfferOut<Self::Api>> {
         let offer = self.offers().get(&index);
+        let fee = self.percentage_from_accepter_to_owner().get();
         if let Some(offer) = offer {
-            Some(self.offer_to_offer_out(index, offer))
+            Some(self.offer_to_offer_out(index, offer, &fee))
         } else {
             None
         }
@@ -244,13 +259,17 @@ pub trait CentralMarket {
     #[storage_mapper("offers")]
     fn offers(&self) -> MapMapper<u64, Offer<Self::Api>>;
 
-    #[view(getUniqueFundReceiver)]
-    #[storage_mapper("unique_fund_receiver")]
-    fn unique_fund_receiver(&self) -> SingleValueMapper<ManagedAddress>;
+    #[storage_mapper("accepted_tokens")]
+    fn accepted_tokens(&self) -> SetMapper<EgldOrEsdtTokenIdentifier>;
 
-    #[view(offerAddingWhitelist)]
-    #[storage_mapper("offer_adding_whitelist")]
-    fn offer_adding_whitelist(&self) -> SetMapper<ManagedAddress>;
+    #[storage_mapper("accepted_payments")]
+    fn accepted_payments(&self) -> SetMapper<EgldOrEsdtTokenIdentifier>;
+
+    #[storage_mapper("percentage_from_adder_to_owner")]
+    fn percentage_from_adder_to_owner(&self) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("percentage_from_accepter_to_owner")]
+    fn percentage_from_accepter_to_owner(&self) -> SingleValueMapper<BigUint>;
 
     #[view(viewEmptyOfferIndexes)]
     #[storage_mapper("empty_offer_indexes")]
