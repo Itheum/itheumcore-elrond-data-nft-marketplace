@@ -1,5 +1,5 @@
 [package]
-name = "central_market-meta"
+name = "data_market-meta"
 version = "0.0.0"
 edition = "2018"
 publish = false
@@ -7,7 +7,7 @@ authors = [ "you",]
 
 [dev-dependencies]
 
-[dependencies.central_market]
+[dependencies.data_market]
 path = ".."
 
 [dependencies.elrond-wasm]

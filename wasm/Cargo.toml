@@ -1,5 +1,5 @@
 [package]
-name = "central_market-wasm"
+name = "data_market-wasm"
 version = "0.0.0"
 edition = "2018"
 publish = false
@@ -20,7 +20,7 @@ lto = true
 debug = false
 panic = "abort"
 
-[dependencies.central_market]
+[dependencies.data_market]
 path = ".."
 
 [dependencies.elrond-wasm-node]

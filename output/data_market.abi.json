@@ -8,16 +8,16 @@
             "short": "rustc 1.64.0-nightly (6dba4ed21 2022-07-09)"
         },
         "contractCrate": {
-            "name": "central_market",
+            "name": "data_market",
             "version": "0.0.0",
-            "git_version": "ef37130-modified"
+            "git_version": "1acb144-modified"
         },
         "framework": {
             "name": "elrond-wasm",
             "version": "0.34.1"
         }
     },
-    "name": "CentralMarket",
+    "name": "DataMarket",
     "constructor": {
         "inputs": [],
         "outputs": []

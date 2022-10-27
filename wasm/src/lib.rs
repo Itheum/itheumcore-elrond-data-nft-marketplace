@@ -5,7 +5,7 @@
 #![no_std]
 
 elrond_wasm_node::wasm_endpoints! {
-    central_market
+    data_market
     (
         acceptOffer
         addAcceptedPayment

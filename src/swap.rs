@@ -34,7 +34,7 @@ pub struct DataNftAttributes<M: ManagedTypeApi> {
 }
 
 #[elrond_wasm::contract]
-pub trait CentralMarket {
+pub trait DataMarket {
     #[init]
     fn init(&self) {}
 
