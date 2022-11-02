@@ -7,7 +7,7 @@ elrond_wasm::derive_imports!();
 #[derive(Clone, NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct Offer<M: ManagedTypeApi> {
     pub owner: ManagedAddress<M>,
-    pub offered_token: EgldOrEsdtTokenPayment<M>,
+    pub offered_token: EsdtTokenPayment<M>,
     pub wanted_token: EgldOrEsdtTokenPayment<M>,
     pub quantity: BigUint<M>,
 }
@@ -15,7 +15,7 @@ pub struct Offer<M: ManagedTypeApi> {
 pub struct OfferOut<M: ManagedTypeApi> {
     pub index: u64,
     pub owner: ManagedAddress<M>,
-    pub offered_token_identifier: EgldOrEsdtTokenIdentifier<M>,
+    pub offered_token_identifier: TokenIdentifier<M>,
     pub offered_token_nonce: u64,
     pub offered_token_amount: BigUint<M>,
     pub wanted_token_identifier: EgldOrEsdtTokenIdentifier<M>,
@@ -47,7 +47,7 @@ pub trait DataMarket {
 
     #[only_owner]
     #[endpoint(addAcceptedToken)]
-    fn add_accepted_token(&self, token_id: EgldOrEsdtTokenIdentifier) {
+    fn add_accepted_token(&self, token_id: TokenIdentifier) {
         self.accepted_tokens().insert(token_id);
     }
 
@@ -74,7 +74,7 @@ pub trait DataMarket {
     ) -> u64 {
         require!(!self.paused().get(), "Contract is paused");
         let caller = self.blockchain().get_caller();
-        let mut token_offered = self.call_value().egld_or_single_esdt();
+        let mut token_offered = self.call_value().single_esdt();
         require!(
             self.accepted_payments().contains(&wanted_token_id),
             "Token not accepted"
@@ -122,7 +122,7 @@ pub trait DataMarket {
                 &caller == &offer.owner || &caller == &sc_owner,
                 "Only special addresses can cancel offers"
             );
-            self.send().direct(
+            self.send().direct_esdt(
                 &offer.owner,
                 &offer.offered_token.token_identifier,
                 offer.offered_token.token_nonce,
@@ -163,15 +163,32 @@ pub trait DataMarket {
                 payment.amount == correct_payment_amount,
                 "Wrong token payment"
             );
+
+            let token_data = self.blockchain().get_esdt_token_data(
+                &self.blockchain().get_sc_address(),
+                &offer.offered_token.token_identifier,
+                offer.offered_token.token_nonce,
+            );
+
+            let token_attributes = token_data.decode_attributes::<DataNftAttributes<Self::Api>>();
+            let rlts = &correct_payment_amount * &token_data.royalties / BigUint::from(10000u64);
+            self.send().direct(
+                &token_attributes.creator,
+                &offer.wanted_token.token_identifier,
+                offer.wanted_token.token_nonce,
+                &rlts,
+            );
+
             self.send().direct(
                 &offer.owner,
                 &offer.wanted_token.token_identifier,
                 offer.wanted_token.token_nonce,
                 &(&correct_payment_amount
-                    - &(&correct_payment_amount * &adder_fee / &BigUint::from(10000u64))),
+                    - &(&correct_payment_amount * &adder_fee / &BigUint::from(10000u64))
+                    - &rlts),
             );
 
-            self.send().direct(
+            self.send().direct_esdt(
                 &caller,
                 &offer.offered_token.token_identifier,
                 offer.offered_token.token_nonce,
@@ -260,7 +277,7 @@ pub trait DataMarket {
     fn offers(&self) -> MapMapper<u64, Offer<Self::Api>>;
 
     #[storage_mapper("accepted_tokens")]
-    fn accepted_tokens(&self) -> SetMapper<EgldOrEsdtTokenIdentifier>;
+    fn accepted_tokens(&self) -> SetMapper<TokenIdentifier>;
 
     #[storage_mapper("accepted_payments")]
     fn accepted_payments(&self) -> SetMapper<EgldOrEsdtTokenIdentifier>;
