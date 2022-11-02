@@ -32,6 +32,7 @@
     "bigIntGetCallValue",
     "managedSCAddress",
     "managedGetESDTTokenData",
+    "bigIntFinishUnsigned",
     "bigIntSign",
     "smallIntFinishUnsigned",
     "smallIntFinishSigned",

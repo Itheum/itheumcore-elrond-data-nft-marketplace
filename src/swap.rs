@@ -138,7 +138,7 @@ pub trait DataMarket {
 
     #[payable("*")]
     #[endpoint(acceptOffer)]
-    fn accept_offer(&self, index: u64, quantity: BigUint) {
+    fn accept_offer(&self, index: u64, quantity: BigUint) -> BigUint {
         require!(!self.paused().get(), "Contract is paused");
         let caller = self.blockchain().get_caller();
         let moffer = self.offers().get(&index);
@@ -148,8 +148,9 @@ pub trait DataMarket {
             let accepter_fee = self.percentage_from_accepter_to_owner().get();
             let adder_fee = self.percentage_from_adder_to_owner().get();
             let mut correct_payment_amount = &offer.wanted_token.amount * &quantity;
-            correct_payment_amount +=
-                &correct_payment_amount * &accepter_fee / BigUint::from(10000u64);
+            let fee_from_accepter =
+                &correct_payment_amount * &accepter_fee / &BigUint::from(10000u64);
+            correct_payment_amount += &fee_from_accepter;
             require!(offer.quantity >= quantity, "Not enough quantity");
             require!(
                 payment.token_identifier == offer.wanted_token.token_identifier,
@@ -172,20 +173,21 @@ pub trait DataMarket {
 
             let token_attributes = token_data.decode_attributes::<DataNftAttributes<Self::Api>>();
             let rlts = &correct_payment_amount * &token_data.royalties / BigUint::from(10000u64);
-            self.send().direct(
-                &token_attributes.creator,
-                &offer.wanted_token.token_identifier,
-                offer.wanted_token.token_nonce,
-                &rlts,
-            );
+            let fee_from_adder = &correct_payment_amount * &adder_fee / BigUint::from(10000u64);
+            if rlts > BigUint::zero() {
+                self.send().direct(
+                    &token_attributes.creator,
+                    &offer.wanted_token.token_identifier,
+                    offer.wanted_token.token_nonce,
+                    &rlts,
+                );
+            }
 
             self.send().direct(
                 &offer.owner,
                 &offer.wanted_token.token_identifier,
                 offer.wanted_token.token_nonce,
-                &(&correct_payment_amount
-                    - &(&correct_payment_amount * &adder_fee / &BigUint::from(10000u64))
-                    - &rlts),
+                &(&correct_payment_amount - &rlts - &fee_from_adder - &fee_from_accepter),
             );
 
             self.send().direct_esdt(
@@ -201,6 +203,7 @@ pub trait DataMarket {
                 offer.quantity -= quantity;
                 self.offers().insert(index, offer);
             }
+            rlts
         } else {
             elrond_wasm::sc_panic!("Offer not found");
         }
