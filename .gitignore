@@ -17,3 +17,6 @@ deployOutput
 commands.txt
 keystore.json
 keystorePassword.txt
+output*
+*.pem
+

@@ -3,13 +3,13 @@ name = "data_market"
 version = "0.0.0"
 edition = "2018"
 publish = false
-authors = [ "you",]
+authors = [ "Ovidiu Damian - Itheum","Bucur David - Itheum"]
 
 [lib]
-path = "src/swap.rs"
+path = "src/lib.rs"
 
 [dependencies.elrond-wasm]
-version = "0.34.1"
+version = "0.38.0"
 
 [dev-dependencies.elrond-wasm-debug]
-version = "0.34.1"
+version = "0.38.0"

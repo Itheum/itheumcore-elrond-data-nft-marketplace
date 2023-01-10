@@ -3,7 +3,7 @@ name = "data_market-meta"
 version = "0.0.0"
 edition = "2018"
 publish = false
-authors = [ "you",]
+authors = [ "Ovidiu Damian - Itheum","Bucur David - Itheum"]
 
 [dev-dependencies]
 
@@ -11,7 +11,7 @@ authors = [ "you",]
 path = ".."
 
 [dependencies.elrond-wasm]
-version = "0.34.1"
+version = "0.38.0"
 
 [dependencies.elrond-wasm-debug]
-version = "0.34.1"
+version = "0.38.0"

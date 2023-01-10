@@ -3,7 +3,7 @@ name = "data_market-wasm"
 version = "0.0.0"
 edition = "2018"
 publish = false
-authors = [ "you",]
+authors = [ "Ovidiu Damian - Itheum","Bucur David - Itheum"]
 
 [lib]
 crate-type = [ "cdylib",]
@@ -24,8 +24,8 @@ panic = "abort"
 path = ".."
 
 [dependencies.elrond-wasm-node]
-version = "0.34.1"
+version = "0.38.0"
 
 [dependencies.elrond-wasm-output]
-version = "0.34.1"
+version = "0.38.0"
 features = [ "wasm-output-mode",]
