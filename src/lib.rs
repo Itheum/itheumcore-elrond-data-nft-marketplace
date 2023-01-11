@@ -23,7 +23,6 @@ pub trait DataMarket:
         self.pause_toggle_event(&true);
     }
 
-    #[only_owner]
     #[endpoint(setFees)]
     fn set_fees(&self, seller_fee: BigUint, buyer_fee: BigUint) {
         let caller = self.blockchain().get_caller();

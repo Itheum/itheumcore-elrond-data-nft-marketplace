@@ -2,7 +2,6 @@
 # will have compiled files and executables
 /target/
 */target/
-/tests
 /wallets
 
 # Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
@@ -17,6 +16,7 @@ deployOutput
 commands.txt
 keystore.json
 keystorePassword.txt
+output
 output*
 *.pem
-
+interaction/deploy-devnet.interaction.json
