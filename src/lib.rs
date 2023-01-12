@@ -86,6 +86,11 @@ pub trait DataMarket:
                 data_nft.amount >= existing_quantity,
                 "Quantity must be less than offered token amount"
             );
+            require!(
+                &data_nft.amount % &existing_quantity == 0,
+                "Quantity must be a divisor of offered token amount"
+            );
+
             data_nft.amount = &data_nft.amount / &existing_quantity;
             real_quantity = existing_quantity;
         }
@@ -103,7 +108,7 @@ pub trait DataMarket:
 
     #[endpoint(cancelOffer)]
     fn cancel_offer(&self, index: u64) {
-        require!(!self.is_paused().get(), "Contract is paused");
+        self.require_trade_is_ready();
         let offer_to_cancel = self.offers().get(&index);
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();

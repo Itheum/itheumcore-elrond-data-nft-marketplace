@@ -5,6 +5,7 @@ use data_market::storage::*;
 use data_market::DataMarket;
 
 use elrond_wasm::elrond_codec::multi_types::OptionalValue;
+use elrond_wasm::elrond_codec::Empty;
 
 use elrond_wasm::types::EgldOrEsdtTokenPayment;
 use elrond_wasm::types::EsdtTokenPayment;
@@ -676,20 +677,6 @@ fn add_offer_test() {
         }),
     );
 
-    b_wrapper.check_nft_balance(
-        &first_user_address,
-        SFT_TICKER,
-        1u64,
-        &rust_biguint!(0u64),
-        Option::Some(&DataNftAttributes::<DebugApi> {
-            data_preview_url: managed_buffer!(DATA_PREVIEW),
-            data_stream_url: managed_buffer!(DATA_STREAM),
-            data_marchal_url: managed_buffer!(DATA_MARSHAL),
-            creator: managed_address!(&first_user_address),
-            creation_time: 100u64,
-        }),
-    );
-
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
             assert_eq!(sc.highest_offer_index().get(), 1u64);
@@ -724,10 +711,286 @@ fn add_offer_test() {
         })
         .assert_ok();
 
-    // [TO DO] Add offer from the second address
-    // [TO DO] Use quantity > 1
+    b_wrapper
+        .execute_esdt_transfer(
+            second_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(10u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(200u64),
+                    OptionalValue::Some(managed_biguint!(0u64)),
+                );
+            },
+        )
+        .assert_user_error("Quantity must be greater than 0");
+
+    b_wrapper
+        .execute_esdt_transfer(
+            second_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(20u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(200u64),
+                    OptionalValue::Some(managed_biguint!(21u64)),
+                );
+            },
+        )
+        .assert_user_error("Quantity must be less than offered token amount");
+
+    b_wrapper
+        .execute_esdt_transfer(
+            second_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(20u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(200u64),
+                    OptionalValue::Some(managed_biguint!(3u64)),
+                );
+            },
+        )
+        .assert_user_error("Quantity must be a divisor of offered token amount");
+
+    b_wrapper
+        .execute_esdt_transfer(
+            second_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(20u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(200u64),
+                    OptionalValue::Some(managed_biguint!(4u64)),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(sc.highest_offer_index().get(), 2u64);
+            assert_eq!(sc.offers().len(), 2usize);
+            assert_eq!(sc.empty_offer_indexes().len(), 0usize);
+        })
+        .assert_ok();
+
+    b_wrapper.check_nft_balance(
+        &setup.contract_wrapper.address_ref(),
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(20u64),
+        Option::Some(&DataNftAttributes::<DebugApi> {
+            data_preview_url: managed_buffer!(DATA_PREVIEW),
+            data_stream_url: managed_buffer!(DATA_STREAM),
+            data_marchal_url: managed_buffer!(DATA_MARSHAL),
+            creator: managed_address!(&second_user_address),
+            creation_time: 100u64,
+        }),
+    );
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            let offer = Offer::<TxContextRef> {
+                owner: managed_address!(second_user_address),
+                offered_token: EsdtTokenPayment::new(
+                    managed_token_id!(SFT_TICKER),
+                    2u64,
+                    managed_biguint!(5u64),
+                ),
+                wanted_token: EgldOrEsdtTokenPayment::new(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0,
+                    managed_biguint!(200u64),
+                ),
+                quantity: managed_biguint!(4u64),
+            };
+
+            let offer_from_storage = sc.offers().get(&1u64).unwrap();
+
+            assert_eq!(offer_from_storage.owner, offer.owner);
+            assert_eq!(offer_from_storage.offered_token, offer.offered_token);
+            assert_eq!(offer_from_storage.wanted_token, offer.wanted_token);
+            assert_eq!(offer_from_storage.quantity, offer.quantity);
+        })
+        .assert_ok();
 }
 
 // [TO DO] Add test for cancelOffer
+#[test]
+fn cancel_offer_test() {
+    let mut setup = setup_contract(data_market::contract_obj);
+    let b_wrapper = &mut setup.blockchain_wrapper;
+    let owner_address = &setup.owner_address;
+    let treasury_address = &setup.treasury_address;
+    let first_user_address = &setup.first_user_address;
+    let second_user_address = &setup.second_user_address;
+
+    b_wrapper
+        .execute_tx(
+            first_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.cancel_offer(0u64);
+            },
+        )
+        .assert_user_error("Marketplace trade is not ready");
+
+    // Test add_accepted_payment function
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+            },
+        )
+        .assert_ok();
+
+    // Test add_accepted_token function
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.add_accepted_token(managed_token_id!(SFT_TICKER));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_treasury_address(managed_address!(treasury_address));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_is_paused(false);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            1,
+            &rust_biguint!(10u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(200u64),
+                    OptionalValue::None,
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            second_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(20u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(200u64),
+                    OptionalValue::Some(managed_biguint!(4u64)),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.cancel_offer(0u64);
+            },
+        )
+        .assert_user_error("Only special addresses can cancel offers");
+
+    b_wrapper
+        .execute_tx(
+            first_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.cancel_offer(0u64);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.cancel_offer(1u64);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(sc.offers().len(), 0usize);
+            assert_eq!(sc.empty_offer_indexes().len(), 2usize);
+        })
+        .assert_ok();
+
+    b_wrapper.check_nft_balance(
+        &setup.contract_wrapper.address_ref(),
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(0u64),
+        Option::<&Empty>::None,
+    );
+
+    b_wrapper.check_nft_balance(
+        &setup.contract_wrapper.address_ref(),
+        SFT_TICKER,
+        1u64,
+        &rust_biguint!(0u64),
+        Option::<&Empty>::None,
+    );
+}
+
 // [TO DO] Add test for acceptOffer
 // [TO DO] Add test for views
