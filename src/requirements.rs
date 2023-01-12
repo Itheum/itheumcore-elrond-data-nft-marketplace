@@ -17,8 +17,22 @@ pub trait RequirementsModule: crate::storage::StorageModule {
             );
         }
     }
-    // Checks whether a value is bigger than zero
-    fn require_value_is_positive(&self, value: &BigUint) {
-        require!(value > &BigUint::zero(), "Value must be higher than zero");
+
+    fn require_trade_is_ready(&self) {
+        let mut is_ready = true;
+
+        if self.treasury_address().is_empty() {
+            is_ready = false;
+        }
+        if self.accepted_payments().is_empty() {
+            is_ready = false;
+        }
+        if self.accepted_tokens().is_empty() {
+            is_ready = false;
+        }
+        if self.is_paused().get() {
+            is_ready = false;
+        }
+        require!(is_ready, "Marketplace trade is not ready");
     }
 }

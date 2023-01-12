@@ -61,7 +61,7 @@ pub trait DataMarket:
         payment_token_amount: BigUint,
         quantity: OptionalValue<BigUint>,
     ) -> u64 {
-        require!(!self.is_paused().get(), "Contract is paused");
+        self.require_trade_is_ready();
         let caller = self.blockchain().get_caller();
 
         let mut data_nft = self.call_value().single_esdt();

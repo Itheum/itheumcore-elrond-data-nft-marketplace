@@ -28,3 +28,6 @@ deploy(){
     erdpy data store --key=address-devnet --value=${ADDRESS}
     erdpy data store --key=deployTransaction-devnet --value=${TRANSACTION}
 }
+
+
+# [TO DO] Add interaction snippets for all endpoints
