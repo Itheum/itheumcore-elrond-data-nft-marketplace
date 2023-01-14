@@ -25,9 +25,11 @@ pub struct OfferOut<M: ManagedTypeApi> {
 pub struct DataNftAttributes<M: ManagedTypeApi> {
     pub data_stream_url: ManagedBuffer<M>,
     pub data_preview_url: ManagedBuffer<M>,
-    pub data_marchal_url: ManagedBuffer<M>,
+    pub data_marshal_url: ManagedBuffer<M>,
     pub creator: ManagedAddress<M>,
     pub creation_time: u64,
+    pub title: ManagedBuffer<M>,
+    pub description: ManagedBuffer<M>,
 }
 
 #[elrond_wasm::module]

@@ -31,6 +31,7 @@ pub trait DataMarket:
     fn set_fees(&self, seller_fee: BigUint, buyer_fee: BigUint) {
         let caller = self.blockchain().get_caller();
         self.require_is_privileged(&caller);
+        self.set_percentage_cuts_event(&seller_fee, &buyer_fee);
         self.percentage_cut_from_buyer().set(&buyer_fee);
         self.percentage_cut_from_seller().set(&seller_fee);
     }
@@ -39,6 +40,7 @@ pub trait DataMarket:
     fn add_accepted_token(&self, token_id: TokenIdentifier) {
         let caller = self.blockchain().get_caller();
         self.require_is_privileged(&caller);
+        self.set_accepted_token_event(&token_id);
         self.accepted_tokens().insert(token_id);
     }
 
@@ -46,6 +48,7 @@ pub trait DataMarket:
     fn add_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier) {
         let caller = self.blockchain().get_caller();
         self.require_is_privileged(&caller);
+        self.set_accepted_payment_token_event(&token_id);
         self.accepted_payments().insert(token_id);
     }
 
@@ -53,6 +56,7 @@ pub trait DataMarket:
     fn set_maximum_payment_fee(&self, maximum_payment_fee: BigUint) {
         let caller = self.blockchain().get_caller();
         self.require_is_privileged(&caller);
+        self.set_max_sft_fee_event(&maximum_payment_fee);
         self.maximum_payment_fee().set(&maximum_payment_fee);
     }
 
@@ -115,6 +119,7 @@ pub trait DataMarket:
                     quantity: existing_quantity,
                 };
                 let index = self.create_offer_index();
+                self.added_offer_event(&index, &offer);
                 self.offers().insert(index, offer);
             }
             OptionalValue::None => {
@@ -125,6 +130,7 @@ pub trait DataMarket:
                     quantity: real_quantity,
                 };
                 let index = self.create_offer_index();
+                self.added_offer_event(&index, &offer);
                 self.offers().insert(index, offer);
             }
         };
@@ -149,7 +155,7 @@ pub trait DataMarket:
                     offer.offered_token.token_nonce,
                     &(offer.offered_token.amount * offer.quantity),
                 );
-
+                self.cancelled_offer_event(&index);
                 self.offers().remove(&index);
                 self.empty_offer_indexes().insert(index);
             }
@@ -159,7 +165,7 @@ pub trait DataMarket:
 
     #[payable("*")]
     #[endpoint(acceptOffer)]
-    fn accept_offer(&self, index: u64, quantity: BigUint) -> BigUint {
+    fn accept_offer(&self, index: u64, quantity: BigUint) {
         self.require_trade_is_ready();
         let caller = self.blockchain().get_caller();
         let offer_to_accept = self.offers().get(&index);
@@ -167,11 +173,13 @@ pub trait DataMarket:
 
         match offer_to_accept {
             Some(mut offer) => {
+                // SFT token data and attributes
                 let token_data = self.blockchain().get_esdt_token_data(
                     &self.blockchain().get_sc_address(),
                     &offer.offered_token.token_identifier,
                     offer.offered_token.token_nonce,
                 );
+                // SFT token attributes
                 let token_attributes =
                     token_data.decode_attributes::<DataNftAttributes<Self::Api>>();
 
@@ -182,11 +190,14 @@ pub trait DataMarket:
                 );
                 let buyer_fee = self.percentage_cut_from_buyer().get();
                 let seller_fee = self.percentage_cut_from_seller().get();
+
                 let mut correct_payment_amount = &offer.wanted_token.amount * &quantity;
                 let mut correct_payment_amount_clone = correct_payment_amount.clone();
+
                 let fee_from_buyer =
                     &correct_payment_amount * &buyer_fee / &BigUint::from(10000u64);
                 correct_payment_amount += &fee_from_buyer;
+
                 require!(quantity <= offer.quantity, "Not enough quantity");
                 require!(
                     payment.token_identifier == offer.wanted_token.token_identifier,
@@ -206,22 +217,25 @@ pub trait DataMarket:
 
                 correct_payment_amount_clone -= &fee_from_seller;
 
-                let rlts =
+                let creator_royalties =
                     &correct_payment_amount_clone * &token_data.royalties / BigUint::from(10000u64);
 
                 // If the creator setup royalties and is not the offer owner he can benefit the royalties
-                if rlts > BigUint::zero() && token_attributes.creator != offer.owner {
+                if creator_royalties > BigUint::zero() && token_attributes.creator != offer.owner {
                     self.send().direct(
                         &token_attributes.creator,
                         &offer.wanted_token.token_identifier,
                         offer.wanted_token.token_nonce,
-                        &rlts,
+                        &creator_royalties,
                     );
                     self.send().direct(
                         &offer.owner,
                         &offer.wanted_token.token_identifier,
                         offer.wanted_token.token_nonce,
-                        &(&correct_payment_amount - &rlts - &fee_from_seller - &fee_from_buyer),
+                        &(&correct_payment_amount
+                            - &creator_royalties
+                            - &fee_from_seller
+                            - &fee_from_buyer),
                     );
                 } else {
                     // Payment to the data NFT-FT seller
@@ -235,7 +249,7 @@ pub trait DataMarket:
 
                 let treasury_address = self.treasury_address().get();
 
-                // Fee goes to treasury address
+                self.accepted_offer_event(&index, &caller, &quantity);
                 // If the creator sells his own NFT-FT he cannot benefit the royalties and are send to treasury
 
                 self.send().direct(
@@ -259,7 +273,6 @@ pub trait DataMarket:
                     offer.quantity -= quantity;
                     self.offers().insert(index, offer);
                 }
-                rlts
             }
 
             None => sc_panic!("Offer not found"),
