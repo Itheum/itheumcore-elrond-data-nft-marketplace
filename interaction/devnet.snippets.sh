@@ -204,7 +204,7 @@ acceptOffer(){
     erdpy --verbose contract call $ADDRESS \
     --recall-nonce \
     --pem=${BUYER} \
-    --gas-limit=100000000 \
+    --gas-limit=10000000 \
     --function "ESDTTransfer" \
     --arguments ${TOKEN_HEX} $1 $method $2 $3 \
     --proxy ${PROXY} \
