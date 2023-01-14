@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           17
+// Endpoints:                           18
 // Async Callback (empty):               1
-// Total number of exported functions:  19
+// Total number of exported functions:  20
 
 #![no_std]
 
@@ -17,6 +17,7 @@ elrond_wasm_node::wasm_endpoints! {
         setFees
         addAcceptedToken
         addAcceptedPayment
+        setMaximumPaymentFee
         setIsPaused
         addOffer
         cancelOffer

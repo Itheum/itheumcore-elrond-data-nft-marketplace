@@ -42,6 +42,9 @@ pub trait StorageModule {
     #[storage_mapper("accepted_payments")]
     fn accepted_payments(&self) -> SetMapper<EgldOrEsdtTokenIdentifier>;
 
+    #[storage_mapper("maximum_payment_fee")]
+    fn maximum_payment_fee(&self) -> SingleValueMapper<BigUint>;
+
     #[storage_mapper("percentage_from_adder_to_owner")]
     fn percentage_cut_from_seller(&self) -> SingleValueMapper<BigUint>;
 

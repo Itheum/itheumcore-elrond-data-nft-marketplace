@@ -44,6 +44,7 @@ where
         ContractObjWrapper<data_market::ContractObj<DebugApi>, ContractObjBuilder>,
     pub first_user_address: Address,
     pub second_user_address: Address,
+    pub third_user_address: Address,
     pub treasury_address: Address,
 }
 
@@ -56,7 +57,7 @@ where
     let rust_zero = rust_biguint!(0u64);
     let mut blockchain_wrapper = BlockchainStateWrapper::new();
     let first_user_address =
-        blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE / 10u128));
+        blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE / 100u128));
     let second_user_address =
         blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE / 100u128));
     let owner_address = blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE));
@@ -68,6 +69,10 @@ where
         cf_builder,
         WASM_PATH,
     );
+    let third_user_address =
+        blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE / 100u128));
+
+    blockchain_wrapper.set_esdt_balance(&third_user_address, TOKEN_ID, &rust_biguint!(10_000));
     blockchain_wrapper.set_esdt_balance(&owner_address, TOKEN_ID, &rust_biguint!(5_000_000));
     blockchain_wrapper.set_esdt_balance(
         &owner_address,
@@ -104,7 +109,7 @@ where
         },
     );
 
-    blockchain_wrapper.set_nft_balance(
+    blockchain_wrapper.set_nft_balance_all_properties(
         &second_user_address,
         SFT_TICKER,
         2u64,
@@ -116,6 +121,11 @@ where
             creator: managed_address!(&second_user_address),
             creation_time: 100u64,
         },
+        500u64,
+        Some(&treasury_address),
+        Option::None,
+        Option::None,
+        &[DATA_PREVIEW.to_vec()],
     );
 
     blockchain_wrapper.set_esdt_local_roles(cf_wrapper.address_ref(), SFT_TICKER, ROLES);
@@ -132,6 +142,7 @@ where
         first_user_address,
         second_user_address,
         treasury_address,
+        third_user_address,
         contract_wrapper: cf_wrapper,
     }
 }
@@ -150,6 +161,24 @@ fn deploy_test() {
             },
         )
         .assert_ok();
+
+    setup
+        .blockchain_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.percentage_cut_from_seller().get(),
+                managed_biguint!(200u64)
+            );
+            assert_eq!(
+                sc.percentage_cut_from_buyer().get(),
+                managed_biguint!(200u64)
+            );
+            assert_eq!(
+                sc.maximum_payment_fee().get(),
+                managed_biguint!(10000u64) * managed_biguint!(10u64).pow(18u32)
+            );
+        })
+        .assert_ok();
 }
 
 #[test] //Tests owner setting a new admin
@@ -161,6 +190,7 @@ fn pause_test() {
     let b_wrapper = &mut setup.blockchain_wrapper;
     let owner_address = &setup.owner_address;
     let administrator_address = &setup.first_user_address;
+    let second_user_address = &setup.second_user_address;
 
     b_wrapper
         .execute_tx(
@@ -229,12 +259,22 @@ fn pause_test() {
             assert_eq!(sc.is_paused().get(), false)
         })
         .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            &second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_is_paused(false);
+            },
+        )
+        .assert_user_error("Address is not privileged");
 }
 
 // [TO DO] Requirements test
 
 #[test] // Tests whether the owner and administrator can set the fees
-        // Tests wheter
 fn value_setters_test() {
     let mut setup = setup_contract(data_market::contract_obj);
     let b_wrapper = &mut setup.blockchain_wrapper;
@@ -281,7 +321,7 @@ fn value_setters_test() {
 
     b_wrapper
         .execute_tx(
-            owner_address,
+            administrator_address,
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
@@ -336,10 +376,52 @@ fn value_setters_test() {
         })
         .assert_ok();
 
+    b_wrapper
+        .execute_tx(
+            administrator_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.add_accepted_token(managed_token_id!(SFT_TICKER));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.accepted_tokens()
+                    .contains(&managed_token_id!(SFT_TICKER)),
+                true
+            );
+        })
+        .assert_ok();
+
     // Test add_accepted_payment function
     b_wrapper
         .execute_tx(
             owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.accepted_payments()
+                    .contains(&managed_token_id_wrapped!(TOKEN_ID)),
+                true
+            );
+        })
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            administrator_address,
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
@@ -959,7 +1041,7 @@ fn cancel_offer_test() {
 
     b_wrapper
         .execute_tx(
-            second_user_address,
+            owner_address,
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
@@ -993,4 +1075,240 @@ fn cancel_offer_test() {
 }
 
 // [TO DO] Add test for acceptOffer
+
+#[test]
+fn accept_offer_test() {
+    let mut setup = setup_contract(data_market::contract_obj);
+    let b_wrapper = &mut setup.blockchain_wrapper;
+    let owner_address = &setup.owner_address;
+    let treasury_address = &setup.treasury_address;
+    let first_user_address = &setup.first_user_address;
+    let second_user_address = &setup.second_user_address;
+    let third_user_address = &setup.third_user_address;
+
+    // Test add_accepted_payment function
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+            },
+        )
+        .assert_ok();
+
+    // Test add_accepted_token function
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.add_accepted_token(managed_token_id!(SFT_TICKER));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_treasury_address(managed_address!(treasury_address));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_is_paused(false);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            second_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(2u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(100),
+                    OptionalValue::Some(managed_biguint!(2u64)),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            second_user_address,
+            &setup.contract_wrapper,
+            TOKEN_ID,
+            0u64,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.accept_offer(0u64, managed_biguint!(4u64));
+            },
+        )
+        .assert_user_error("You cannot accept your own offer");
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            TOKEN_ID,
+            0u64,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.accept_offer(0u64, managed_biguint!(4u64));
+            },
+        )
+        .assert_user_error("Not enough quantity");
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            ANOTHER_TOKEN_ID,
+            0u64,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.accept_offer(0u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_user_error("Wrong token payment");
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            TOKEN_ID,
+            0u64,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.accept_offer(0u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_user_error("Wrong token payment amount");
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            TOKEN_ID,
+            0,
+            &(&rust_biguint!(200u64)
+                + ((&rust_biguint!(200u64) * rust_biguint!(200u64)) / rust_biguint!(10000u64))),
+            |sc| {
+                sc.accept_offer(3u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_user_error("Offer not found");
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            TOKEN_ID,
+            0,
+            &(&rust_biguint!(100)
+                + ((&rust_biguint!(100) * rust_biguint!(200u64)) / rust_biguint!(10000u64))), // buyer needs to send with % fee included
+            |sc| {
+                sc.accept_offer(0u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_ok();
+
+    // first sell no royalties
+
+    let first_user_balance = b_wrapper.get_esdt_balance(first_user_address, TOKEN_ID, 0u64);
+    assert_eq!(first_user_balance, rust_biguint!(9_898)); // 10_000 initial + 98 from offer
+
+    let second_user_balance = b_wrapper.get_esdt_balance(second_user_address, TOKEN_ID, 0u64);
+    assert_eq!(second_user_balance, rust_biguint!(10_098)); // pays the 100 tax + 2 % fee
+
+    let treasury_address_balance = b_wrapper.get_esdt_balance(treasury_address, TOKEN_ID, 0u64);
+    assert_eq!(treasury_address_balance, rust_biguint!(4u64)); // 2% from buyer , 2 % from seller
+
+    b_wrapper.check_nft_balance(
+        &setup.contract_wrapper.address_ref(),
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(1u64),
+        Option::Some(&DataNftAttributes::<DebugApi> {
+            data_preview_url: managed_buffer!(DATA_PREVIEW),
+            data_stream_url: managed_buffer!(DATA_STREAM),
+            data_marchal_url: managed_buffer!(DATA_MARSHAL),
+            creator: managed_address!(&second_user_address),
+            creation_time: 100u64,
+        }),
+    );
+
+    b_wrapper.check_nft_balance(
+        &first_user_address,
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(1u64),
+        Option::Some(&DataNftAttributes::<DebugApi> {
+            data_preview_url: managed_buffer!(DATA_PREVIEW),
+            data_stream_url: managed_buffer!(DATA_STREAM),
+            data_marchal_url: managed_buffer!(DATA_MARSHAL),
+            creator: managed_address!(&second_user_address),
+            creation_time: 100u64,
+        }),
+    );
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(1u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(1_000),
+                    OptionalValue::None,
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            third_user_address,
+            &setup.contract_wrapper,
+            TOKEN_ID,
+            0,
+            &(&rust_biguint!(1_000)
+                + ((&rust_biguint!(1_000) * rust_biguint!(200u64)) / rust_biguint!(10000u64))), // buyer needs to send with % fee included
+            |sc| {
+                sc.accept_offer(1u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_ok();
+
+    let treasury_address_balance = b_wrapper.get_esdt_balance(treasury_address, TOKEN_ID, 0u64);
+    assert_eq!(treasury_address_balance, rust_biguint!(44u64)); // 2% from buyer , 2 % from seller  total: 40 tokens
+
+    let second_user_balance = b_wrapper.get_esdt_balance(second_user_address, TOKEN_ID, 0u64);
+    assert_eq!(second_user_balance, rust_biguint!(10_147)); // 49 tokens royalties    5%
+
+    let first_user_balance = b_wrapper.get_esdt_balance(first_user_address, TOKEN_ID, 0u64);
+    assert_eq!(first_user_balance, rust_biguint!(10_829)); // 9_898 initial balance + 931 (1_000 - 49 - 20) sale price after taxes
+}
+
 // [TO DO] Add test for views
