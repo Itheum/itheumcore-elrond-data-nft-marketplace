@@ -1309,6 +1309,35 @@ fn accept_offer_test() {
 
     let first_user_balance = b_wrapper.get_esdt_balance(first_user_address, TOKEN_ID, 0u64);
     assert_eq!(first_user_balance, rust_biguint!(10_829)); // 9_898 initial balance + 931 (1_000 - 49 - 20) sale price after taxes
+
+    // Still 1 token from the first offer
+    b_wrapper.check_nft_balance(
+        &setup.contract_wrapper.address_ref(),
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(1u64),
+        Option::Some(&DataNftAttributes::<DebugApi> {
+            data_preview_url: managed_buffer!(DATA_PREVIEW),
+            data_stream_url: managed_buffer!(DATA_STREAM),
+            data_marchal_url: managed_buffer!(DATA_MARSHAL),
+            creator: managed_address!(&second_user_address),
+            creation_time: 100u64,
+        }),
+    );
+
+    b_wrapper.check_nft_balance(
+        &third_user_address,
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(1u64),
+        Option::Some(&DataNftAttributes::<DebugApi> {
+            data_preview_url: managed_buffer!(DATA_PREVIEW),
+            data_stream_url: managed_buffer!(DATA_STREAM),
+            data_marchal_url: managed_buffer!(DATA_MARSHAL),
+            creator: managed_address!(&second_user_address),
+            creation_time: 100u64,
+        }),
+    );
 }
 
 // [TO DO] Add test for views
