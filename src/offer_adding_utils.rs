@@ -2,7 +2,7 @@ elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
 #[elrond_wasm::module]
-pub trait UtilsModule: crate::storage::StorageModule {
+pub trait OfferAddingUtils: crate::storage::StorageModule {
     fn create_offer_index(&self) -> u64 {
         if self.empty_offer_indexes().is_empty() {
             let index = self.highest_offer_index().get().clone();

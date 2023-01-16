@@ -2,7 +2,7 @@ use std::u8;
 
 use data_market::storage::*;
 
-use data_market::utils::UtilsModule;
+use data_market::offer_adding_utils::OfferAddingUtils;
 use data_market::views::ViewsModule;
 use data_market::DataMarket;
 use elrond_wasm::elrond_codec::multi_types::OptionalValue;

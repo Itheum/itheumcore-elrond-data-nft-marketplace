@@ -18,7 +18,7 @@ pub trait RequirementsModule: crate::storage::StorageModule {
         }
     }
 
-    fn require_trade_is_ready(&self) {
+    fn require_sc_ready_to_trade(&self) {
         let mut is_ready = true;
 
         if self.treasury_address().is_empty() {

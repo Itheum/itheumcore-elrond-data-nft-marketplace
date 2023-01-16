@@ -6,9 +6,9 @@ elrond_wasm::derive_imports!();
 use crate::{storage::DataNftAttributes, storage::Offer};
 
 pub mod events;
+pub mod offer_adding_utils;
 pub mod requirements;
 pub mod storage;
-pub mod utils;
 pub mod views;
 
 #[elrond_wasm::contract]
@@ -17,7 +17,7 @@ pub trait DataMarket:
     + requirements::RequirementsModule
     + views::ViewsModule
     + events::EventsModule
-    + utils::UtilsModule
+    + offer_adding_utils::OfferAddingUtils
 {
     #[init]
     fn init(&self) {
@@ -112,7 +112,7 @@ pub trait DataMarket:
         payment_token_fee: BigUint,
         opt_quantity: OptionalValue<BigUint>,
     ) {
-        self.require_trade_is_ready();
+        self.require_sc_ready_to_trade();
         let caller = self.blockchain().get_caller();
 
         let mut data_nft = self.call_value().single_esdt();
@@ -172,7 +172,7 @@ pub trait DataMarket:
 
     #[endpoint(cancelOffer)]
     fn cancel_offer(&self, index: u64) {
-        self.require_trade_is_ready();
+        self.require_sc_ready_to_trade();
         let offer_to_cancel = self.offers().get(&index);
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
@@ -200,7 +200,7 @@ pub trait DataMarket:
     #[payable("*")]
     #[endpoint(acceptOffer)]
     fn accept_offer(&self, index: u64, quantity: BigUint) {
-        self.require_trade_is_ready();
+        self.require_sc_ready_to_trade();
 
         let buyer_has_discount;
         let seller_has_discount;
