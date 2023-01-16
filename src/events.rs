@@ -17,6 +17,14 @@ pub trait EventsModule {
     #[event("setAdministrator")]
     fn set_administrator_event(&self, #[indexed] administrator: &ManagedAddress);
 
+    // Emitted whenever the discounts are set
+    #[event("setDiscounts")]
+    fn set_discounts_event(
+        &self,
+        #[indexed] discount_fee_percentage_seller: &BigUint,
+        #[indexed] discount_fee_percentage_buyer: &BigUint,
+    );
+
     // Emitted whenever the percentage cuts are set
     #[event("setPercentageCuts")]
     fn set_percentage_cuts_event(

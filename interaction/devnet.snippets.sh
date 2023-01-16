@@ -32,6 +32,26 @@ deploy(){
 }
 
 
+initializeContract(){
+    # $1 = token identifier of the collection to be traded
+    # $2 = token identifier of the accetepted token payment
+    # $3 = treasury address
+
+    token_identifier_collection="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
+    token_identifier_payment="0x$(echo -n ${2} | xxd -p -u | tr -d '\n')"
+    treasury_address="0x$(erdpy wallet bech32 --decode ${3})"
+
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "initializeContract" \
+    --arguments $token_identifier_collection $token_identifier_payment $treasury_address \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+}
+
 pauseContract(){
     erdpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
@@ -84,6 +104,22 @@ setAdministrator(){
     --gas-limit=6000000 \
     --function "setAdministrator" \
     --arguments $administrator_address \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+}
+
+
+setDiscounts(){
+    # $1 = seller discount
+    # $2 = buyer discount
+
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setDiscounts" \
+    --arguments ${1} ${2} \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return

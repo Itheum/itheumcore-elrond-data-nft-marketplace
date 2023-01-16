@@ -5,15 +5,17 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           18
+// Endpoints:                           20
 // Async Callback (empty):               1
-// Total number of exported functions:  20
+// Total number of exported functions:  22
 
 #![no_std]
 
 elrond_wasm_node::wasm_endpoints! {
     data_market
     (
+        initializeContract
+        setDiscounts
         setFees
         addAcceptedToken
         addAcceptedPayment
