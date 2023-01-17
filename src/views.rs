@@ -10,8 +10,14 @@ use crate::{
 pub trait ViewsModule: crate::storage::StorageModule {
     #[view(getRequirements)]
     fn view_requirements(&self) -> MarketPlaceRequirements<Self::Api> {
-        let accepted_tokens = self.accepted_tokens().iter().collect::<ManagedVec<_>>();
-        let accepted_payments = self.accepted_payments().iter().collect::<ManagedVec<_>>();
+        let accepted_tokens = self
+            .accepted_tokens()
+            .iter()
+            .collect::<ManagedVec<TokenIdentifier>>();
+        let accepted_payments = self
+            .accepted_payments()
+            .iter()
+            .collect::<ManagedVec<EgldOrEsdtTokenIdentifier>>();
         MarketPlaceRequirements {
             accepted_tokens,
             accepted_payments,
