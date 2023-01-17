@@ -1,10 +1,28 @@
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
-use crate::{storage::Offer, storage::OfferOut};
+use crate::{
+    storage::Offer,
+    storage::{MarketPlaceRequirements, OfferOut},
+};
 
 #[elrond_wasm::module]
 pub trait ViewsModule: crate::storage::StorageModule {
+    #[view(getRequirements)]
+    fn view_requirements(&self) -> MarketPlaceRequirements<Self::Api> {
+        let accepted_tokens = self.accepted_tokens().iter().collect::<ManagedVec<_>>();
+        let accepted_payments = self.accepted_payments().iter().collect::<ManagedVec<_>>();
+        MarketPlaceRequirements {
+            accepted_tokens,
+            accepted_payments,
+            maximum_payment_fee: self.maximum_payment_fee().get(),
+            discount_fee_percentage_buyer: self.discount_fee_percentage_buyer().get(),
+            discount_fee_percentage_seller: self.discount_fee_percentage_seller().get(),
+            percentage_cut_from_buyer: self.percentage_cut_from_buyer().get(),
+            percentage_cut_from_seller: self.percentage_cut_from_seller().get(),
+        }
+    }
+
     #[view(viewOffers)]
     fn view_offers(&self, from: u64, to: u64) -> ManagedVec<OfferOut<Self::Api>> {
         let mut offers = ManagedVec::new();

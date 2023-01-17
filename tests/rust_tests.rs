@@ -11,6 +11,7 @@ use elrond_wasm::elrond_codec::Empty;
 use elrond_wasm::types::EgldOrEsdtTokenPayment;
 use elrond_wasm::types::EsdtTokenPayment;
 
+use elrond_wasm::types::ManagedVec;
 use elrond_wasm::types::{Address, EsdtLocalRole};
 
 use elrond_wasm_debug::tx_mock::TxContextRef;
@@ -2179,6 +2180,47 @@ fn views_test() {
                 offer_mock_2.wanted_token_amount
             );
             assert_eq!(offers.get(1usize).quantity, offer_mock_2.quantity);
+        })
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            let mut accepted_tokens = ManagedVec::new();
+            accepted_tokens.push(managed_token_id!(SFT_TICKER));
+            let mut accepted_payments = ManagedVec::new();
+            accepted_payments.push(managed_token_id_wrapped!(TOKEN_ID));
+            let req = MarketPlaceRequirements::<DebugApi> {
+                accepted_tokens,
+                accepted_payments,
+                maximum_payment_fee: managed_biguint!(10000u64)
+                    * managed_biguint!(10u64).pow(18u32),
+                discount_fee_percentage_buyer: managed_biguint!(0),
+                discount_fee_percentage_seller: managed_biguint!(0),
+                percentage_cut_from_buyer: managed_biguint!(200u64),
+                percentage_cut_from_seller: managed_biguint!(200u64),
+            };
+
+            let sc_req = sc.view_requirements();
+
+            assert_eq!(sc_req.accepted_tokens, req.accepted_tokens);
+            assert_eq!(sc_req.accepted_payments, req.accepted_payments);
+            assert_eq!(sc_req.maximum_payment_fee, req.maximum_payment_fee);
+            assert_eq!(
+                sc_req.discount_fee_percentage_buyer,
+                req.discount_fee_percentage_buyer
+            );
+            assert_eq!(
+                sc_req.discount_fee_percentage_seller,
+                req.discount_fee_percentage_seller
+            );
+            assert_eq!(
+                sc_req.percentage_cut_from_buyer,
+                req.percentage_cut_from_buyer
+            );
+            assert_eq!(
+                sc_req.percentage_cut_from_seller,
+                req.percentage_cut_from_seller
+            );
         })
         .assert_ok();
 }
