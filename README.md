@@ -205,7 +205,8 @@ Endpoint that lets seller create their offers. The seller can set the payment to
 
 - The quantity is not set (The optional value is not passed as an argument): In this case the seller will be able to sell all the tokens that he sends to the endpoint to the selected price.
 - The quantity is set equal to the amount of tokens sent to the endpoint: In this case the seller will sell 1 token at a time with the selected price.
-- The quantity is set to a value less than the amount of tokens sent to the endpoint: In this case the seller will sell the quantity of tokens at a time with the selected price.
+- The quantity is set to a value less than the amount of tokens sent to the endpoint: In this case the seller will sell batches of tokens at a time with the selected price.
+  > quantity = 2 and offered_token_amount = 5; it means that the seller offers 2 batches of 5 tokens each for the selected price.
 
 Call structure: "ESDTNFTTransfer" + "@" + accepted_token_id hex encoded + "@" + accepted_token_nonce hex encoded + "@" + accepted_token_quantity hex encoded + "@" + receiver_address hex encoded + "@" + "addOffer" hex encoded + "@" + payment_token_id hex encoded + "@" + payment_token_nonce hex encoded + "@" + payment_token_fee hex encoded + "@" + opt_quantity hex encoded.
 
@@ -269,7 +270,6 @@ The structure contains the following fields:
 - **wanted_token_nonce**: the token nonce of the wanted(payment) token
 - **wanted_token_amount**: the amount(price) of the wanted(payment) token
 - **quantity**: the quantity represents the remaining supply of the offered token that can be sold
-  > quantity = 2 and offered_token_amount = 5; it means that the seller offers 2 batches of 5 tokens each for wanted_token_payment
 
 Call structure: "viewOffer" + "@" + index hex encoded.
 
