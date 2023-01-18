@@ -22,6 +22,16 @@ pub struct OfferOut<M: ManagedTypeApi> {
 }
 
 #[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Clone, Debug, TypeAbi)]
+pub struct MarketPlaceRequirements<M: ManagedTypeApi> {
+    pub accepted_tokens: ManagedVec<M, TokenIdentifier<M>>,
+    pub accepted_payments: ManagedVec<M, EgldOrEsdtTokenIdentifier<M>>,
+    pub maximum_payment_fee: BigUint<M>,
+    pub discount_fee_percentage_buyer: BigUint<M>,
+    pub discount_fee_percentage_seller: BigUint<M>,
+    pub percentage_cut_from_buyer: BigUint<M>,
+    pub percentage_cut_from_seller: BigUint<M>,
+}
+#[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Clone, Debug, TypeAbi)]
 pub struct DataNftAttributes<M: ManagedTypeApi> {
     pub data_stream_url: ManagedBuffer<M>,
     pub data_preview_url: ManagedBuffer<M>,
@@ -34,40 +44,48 @@ pub struct DataNftAttributes<M: ManagedTypeApi> {
 
 #[elrond_wasm::module]
 pub trait StorageModule {
-    //storage
+    
+    #[view(getOffers)]
     #[storage_mapper("offers")]
     fn offers(&self) -> MapMapper<u64, Offer<Self::Api>>;
 
+    #[view(getAcceptedTokens)]
     #[storage_mapper("accepted_tokens")]
     fn accepted_tokens(&self) -> SetMapper<TokenIdentifier>;
 
+    #[view(getAcceptedTokenPayments)]
     #[storage_mapper("accepted_payments")]
     fn accepted_payments(&self) -> SetMapper<EgldOrEsdtTokenIdentifier>;
 
+    #[view(getMaximumPaymentFee)]
     #[storage_mapper("maximum_payment_fee")]
     fn maximum_payment_fee(&self) -> SingleValueMapper<BigUint>;
 
+    #[view(getDiscountFeePercentageBuyer)]
     #[storage_mapper("discount_fee_percentage_buyer")]
     fn discount_fee_percentage_buyer(&self) -> SingleValueMapper<BigUint>;
 
+    #[view(getDiscountFeePercentageSeller)]
     #[storage_mapper("discount_fee_percentage_seller")]
     fn discount_fee_percentage_seller(&self) -> SingleValueMapper<BigUint>;
 
+    #[view(getPercentageCutFromSeller)]
     #[storage_mapper("percentage_from_adder_to_owner")]
     fn percentage_cut_from_seller(&self) -> SingleValueMapper<BigUint>;
 
+    #[view(getPercentageCutFromBuyer)]
     #[storage_mapper("percentage_from_accepter_to_owner")]
     fn percentage_cut_from_buyer(&self) -> SingleValueMapper<BigUint>;
 
-    #[view(viewEmptyOfferIndexes)]
+    #[view(getEmptyOfferIndexes)]
     #[storage_mapper("empty_offer_indexes")]
     fn empty_offer_indexes(&self) -> UnorderedSetMapper<u64>;
 
-    #[view(viewHighestOfferIndex)]
+    #[view(getHighestOfferIndex)]
     #[storage_mapper("highest_offer_index")]
     fn highest_offer_index(&self) -> SingleValueMapper<u64>;
 
-    #[view(viewIsPaused)]
+    #[view(getIsPaused)]
     #[storage_mapper("pause")]
     fn is_paused(&self) -> SingleValueMapper<bool>;
 
