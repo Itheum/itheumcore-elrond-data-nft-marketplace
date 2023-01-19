@@ -2117,7 +2117,7 @@ fn views_test() {
                 quantity: managed_biguint!(4u64),
             };
 
-            let offers = sc.view_offers(0u64, 1u64);
+            let offers = sc.view_offers(0u64, 1u64, OptionalValue::None);
 
             assert_eq!(offers.get(0usize).index, offer_mock_1.index);
             assert_eq!(offers.get(0usize).owner, offer_mock_1.owner);
@@ -2174,6 +2174,40 @@ fn views_test() {
                 offer_mock_2.wanted_token_amount
             );
             assert_eq!(offers.get(1usize).quantity, offer_mock_2.quantity);
+
+            let offers_2 = sc.view_offers(
+                0u64,
+                1u64,
+                OptionalValue::Some(managed_address!(first_user_address)),
+            );
+
+            assert_eq!(offers_2.get(0usize).index, offer_mock_1.index);
+            assert_eq!(offers_2.get(0usize).owner, offer_mock_1.owner);
+            assert_eq!(
+                offers_2.get(0usize).offered_token_identifier,
+                offer_mock_1.offered_token_identifier
+            );
+            assert_eq!(
+                offers_2.get(0usize).offered_token_nonce,
+                offer_mock_1.offered_token_nonce
+            );
+            assert_eq!(
+                offers_2.get(0usize).offered_token_amount,
+                offer_mock_1.offered_token_amount
+            );
+            assert_eq!(
+                offers_2.get(0usize).wanted_token_identifier,
+                offer_mock_1.wanted_token_identifier
+            );
+            assert_eq!(
+                offers_2.get(0usize).wanted_token_nonce,
+                offer_mock_1.wanted_token_nonce
+            );
+            assert_eq!(
+                offers_2.get(0usize).wanted_token_amount,
+                offer_mock_1.wanted_token_amount
+            );
+            assert_eq!(offers_2.get(0usize).quantity, offer_mock_1.quantity);
         })
         .assert_ok();
 

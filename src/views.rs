@@ -27,14 +27,28 @@ pub trait ViewsModule: crate::storage::StorageModule {
     }
 
     #[view(viewOffers)]
-    fn view_offers(&self, from: u64, to: u64) -> ManagedVec<OfferOut<Self::Api>> {
+    fn view_offers(
+        &self,
+        from: u64,
+        to: u64,
+        opt_address: OptionalValue<ManagedAddress>,
+    ) -> ManagedVec<OfferOut<Self::Api>> {
         let mut offers = ManagedVec::new();
         let mut nr = 0;
         let fee = self.percentage_cut_from_buyer().get();
         for (index, offer) in self.offers().iter() {
             if nr >= from {
                 if nr <= to {
-                    offers.push(self.offer_to_offer_out(index, offer, &fee));
+                    match opt_address.clone() {
+                        OptionalValue::Some(address) => {
+                            if address == offer.owner {
+                                offers.push(self.offer_to_offer_out(index, offer, &fee));
+                            }
+                        }
+                        OptionalValue::None => {
+                            offers.push(self.offer_to_offer_out(index, offer, &fee));
+                        }
+                    }
                 } else {
                     break;
                 }

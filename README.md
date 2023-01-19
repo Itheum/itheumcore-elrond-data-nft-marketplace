@@ -49,6 +49,7 @@ The init function is called when deploying or upgrading the smart contract. It r
         &self,
         accepted_token_id: TokenIdentifier,
         payment_token_id: EgldOrEsdtTokenIdentifier,
+        maximum_payment_fee: BigUint,
         treasury_address: ManagedAddress,
     );
 ```
@@ -144,30 +145,16 @@ Example: "addAcceptedToken@444154414e46542d613631333137"
 ```rust
 #[endpoint(addAcceptedPayment)]
     fn add_accepted_payment(&self,
-    token_id: EgldOrEsdtTokenIdentifier
+    token_id: EgldOrEsdtTokenIdentifier,
+    maximum_fee: BigUint,
     );
 ```
 
-Endpoint that adds the token id to the list of accepted tokens for payments. The token id can be an ESDT token id or the EGLD token id. The sellers will be able to set and receive payments in the accepted payment tokens. Same for the buyers.
+Endpoint that adds the token id to the list of accepted tokens for payments.It also adds in pair the maximum value for a data NFT-FT sale. The token id can be an ESDT token id or the EGLD token id. The sellers will be able to set and receive payments in the accepted payment tokens. Same for the buyers.
 
 Call structure: "addAcceptedPayment" + "@" + token_id hex encoded.
 
 Example: "addAcceptedPayment@2049544845554d2d613631333137"
-
-#### seMaxiimumPaymentFee
-
-```rust
-#[endpoint(setMaximumPaymentFee)]
-    fn set_maximum_payment_fee(&self,
-    maximum_payment_fee: BigUint
-    );
-```
-
-Endpoint that sets the maximum payment fee. The payment fee is the fee that the buyer pays to the seller for the offer.
-
-Call structure: "setMaximumPaymentFee" + "@" + maximum_payment_fee hex encoded.
-
-Example: "setMaximumPaymentFee@309485009821345068724781056"
 
 #### setIsPaused
 

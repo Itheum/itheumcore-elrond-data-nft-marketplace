@@ -48,8 +48,11 @@ pub trait DataMarket:
                 && self.accepted_tokens().is_empty(),
             "Contract already initialized"
         );
+        self.set_accepted_token_event(&accepted_token_id);
         self.add_accepted_token(accepted_token_id);
+        self.set_accepted_payment_event(&payment_token_id, &maximum_payment_fee);
         self.add_accepted_payment(payment_token_id, maximum_payment_fee);
+        self.treasury_address_event(&treasury_address);
         self.set_treasury_address(treasury_address);
     }
 
