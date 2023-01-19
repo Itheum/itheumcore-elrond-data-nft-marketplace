@@ -14,6 +14,4 @@ pub trait OfferAddingUtils: crate::storage::StorageModule {
             index
         }
     }
-
-    // [TO DO] Generic method to check address has Genesis NFT staked
 }

@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           21
+// Endpoints:                           27
 // Async Callback (empty):               1
-// Total number of exported functions:  23
+// Total number of exported functions:  29
 
 #![no_std]
 
@@ -19,16 +19,22 @@ elrond_wasm_node::wasm_endpoints! {
         setFees
         addAcceptedToken
         addAcceptedPayment
-        setMaximumPaymentFee
         setIsPaused
         addOffer
         cancelOffer
         acceptOffer
         setTreasuryAddress
         setAdministrator
-        viewEmptyOfferIndexes
-        viewHighestOfferIndex
-        viewIsPaused
+        getOffers
+        getAcceptedTokens
+        getAcceptedTokenPayments
+        getDiscountFeePercentageBuyer
+        getDiscountFeePercentageSeller
+        getPercentageCutFromSeller
+        getPercentageCutFromBuyer
+        getEmptyOfferIndexes
+        getHighestOfferIndex
+        getIsPaused
         getTreasuryAddress
         getAdministrator
         getRequirements

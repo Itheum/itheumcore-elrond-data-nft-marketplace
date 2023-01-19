@@ -180,10 +180,6 @@ fn deploy_test() {
                 managed_biguint!(200u64)
             );
             assert_eq!(
-                sc.maximum_payment_fee().get(),
-                managed_biguint!(10000u64) * managed_biguint!(10u64).pow(18u32)
-            );
-            assert_eq!(
                 sc.discount_fee_percentage_buyer().get(),
                 managed_biguint!(0u64)
             );
@@ -349,6 +345,7 @@ fn initialize_contract_test() {
                 sc.initialize_contract(
                     managed_token_id!(SFT_TICKER),
                     managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
                     managed_address!(treasury_address),
                 );
             },
@@ -364,6 +361,7 @@ fn initialize_contract_test() {
                 sc.initialize_contract(
                     managed_token_id!(SFT_TICKER),
                     managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
                     managed_address!(treasury_address),
                 );
             },
@@ -500,7 +498,10 @@ fn requirements_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
             },
         )
         .assert_ok();
@@ -511,7 +512,10 @@ fn requirements_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
             },
         )
         .assert_ok();
@@ -522,41 +526,10 @@ fn requirements_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
-            },
-        )
-        .assert_user_error("Address is not privileged");
-
-    // [test] that owner and administrator can set the maximum sft fee
-    b_wrapper
-        .execute_tx(
-            owner_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                sc.set_maximum_payment_fee(managed_biguint!(10_000));
-            },
-        )
-        .assert_ok();
-
-    b_wrapper
-        .execute_tx(
-            administrator_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                sc.set_maximum_payment_fee(managed_biguint!(10_000));
-            },
-        )
-        .assert_ok();
-
-    b_wrapper
-        .execute_tx(
-            second_user_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                sc.set_maximum_payment_fee(managed_biguint!(10_000));
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
             },
         )
         .assert_user_error("Address is not privileged");
@@ -585,7 +558,10 @@ fn requirements_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
             },
         )
         .assert_ok();
@@ -826,7 +802,10 @@ fn value_setters_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
             },
         )
         .assert_ok();
@@ -835,7 +814,7 @@ fn value_setters_test() {
         .execute_query(&setup.contract_wrapper, |sc| {
             assert_eq!(
                 sc.accepted_payments()
-                    .contains(&managed_token_id_wrapped!(TOKEN_ID)),
+                    .contains_key(&managed_token_id_wrapped!(TOKEN_ID)),
                 true
             );
         })
@@ -847,7 +826,10 @@ fn value_setters_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
             },
         )
         .assert_ok();
@@ -856,7 +838,7 @@ fn value_setters_test() {
         .execute_query(&setup.contract_wrapper, |sc| {
             assert_eq!(
                 sc.accepted_payments()
-                    .contains(&managed_token_id_wrapped!(TOKEN_ID)),
+                    .contains_key(&managed_token_id_wrapped!(TOKEN_ID)),
                 true
             );
         })
@@ -1050,7 +1032,10 @@ fn add_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
             },
         )
         .assert_ok();
@@ -1368,7 +1353,10 @@ fn cancel_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
             },
         )
         .assert_ok();
@@ -1519,7 +1507,10 @@ fn accept_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
             },
         )
         .assert_ok();
@@ -1882,7 +1873,10 @@ fn views_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
             },
         )
         .assert_ok();
@@ -2189,11 +2183,12 @@ fn views_test() {
             accepted_tokens.push(managed_token_id!(SFT_TICKER));
             let mut accepted_payments = ManagedVec::new();
             accepted_payments.push(managed_token_id_wrapped!(TOKEN_ID));
+            let mut maximum_payment_fees = ManagedVec::new();
+            maximum_payment_fees.push(managed_biguint!(10_000));
             let req = MarketPlaceRequirements::<DebugApi> {
                 accepted_tokens,
                 accepted_payments,
-                maximum_payment_fee: managed_biguint!(10000u64)
-                    * managed_biguint!(10u64).pow(18u32),
+                maximum_payment_fees,
                 discount_fee_percentage_buyer: managed_biguint!(0),
                 discount_fee_percentage_seller: managed_biguint!(0),
                 percentage_cut_from_buyer: managed_biguint!(200u64),
@@ -2204,7 +2199,7 @@ fn views_test() {
 
             assert_eq!(sc_req.accepted_tokens, req.accepted_tokens);
             assert_eq!(sc_req.accepted_payments, req.accepted_payments);
-            assert_eq!(sc_req.maximum_payment_fee, req.maximum_payment_fee);
+            assert_eq!(sc_req.maximum_payment_fees, req.maximum_payment_fees);
             assert_eq!(
                 sc_req.discount_fee_percentage_buyer,
                 req.discount_fee_percentage_buyer
