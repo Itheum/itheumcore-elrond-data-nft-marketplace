@@ -35,18 +35,19 @@ deploy(){
 initializeContract(){
     # $1 = token identifier of the collection to be traded
     # $2 = token identifier of the accetepted token payment
-    # $3 = treasury address
+    # $3 = maximum payment fee per SFT
+    # $4 = treasury address
 
     token_identifier_collection="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
     token_identifier_payment="0x$(echo -n ${2} | xxd -p -u | tr -d '\n')"
-    treasury_address="0x$(erdpy wallet bech32 --decode ${3})"
+    treasury_address="0x$(erdpy wallet bech32 --decode ${4})"
 
     erdpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
-    --gas-limit=6000000 \
+    --gas-limit=8000000 \
     --function "initializeContract" \
-    --arguments $token_identifier_collection $token_identifier_payment $treasury_address \
+    --arguments $token_identifier_collection $token_identifier_payment $3 $treasury_address \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
@@ -160,34 +161,23 @@ addAcceptedToken(){
 }
 
 addAcceptedPayment(){
+    # $1 =token identifier  
+    # $2 = maximum payment fee per SFT
+ 
 
-    token_identifier=${TOKEN_HEX}
+    token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
 
       erdpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "addAcceptedPayment" \
-    --arguments $token_identifier \
+    --arguments $token_identifier $2 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
 }
 
-
-setMaximumPaymentFee(){
-    # $1 = maximum payment fee
-
-    erdpy --verbose contract call ${ADDRESS} \
-    --recall-nonce \
-    --pem=${WALLET} \
-    --gas-limit=6000000 \
-    --function "setMaximumPaymentFee" \
-    --arguments ${1} \
-    --proxy ${PROXY} \
-    --chain ${CHAIN_ID} \
-    --send || return
-}
 
 
 addOffer(){

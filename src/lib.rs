@@ -6,6 +6,7 @@ elrond_wasm::derive_imports!();
 use crate::{storage::DataNftAttributes, storage::Offer};
 
 pub mod events;
+pub mod offer_accept_utils;
 pub mod offer_adding_utils;
 pub mod requirements;
 pub mod storage;
@@ -18,6 +19,7 @@ pub trait DataMarket:
     + views::ViewsModule
     + events::EventsModule
     + offer_adding_utils::OfferAddingUtils
+    + offer_accept_utils::OfferAcceptUtils
 {
     #[init]
     fn init(&self) {
@@ -25,8 +27,6 @@ pub trait DataMarket:
         self.pause_toggle_event(&true);
         self.percentage_cut_from_buyer().set(BigUint::from(200u64));
         self.percentage_cut_from_seller().set(BigUint::from(200u64));
-        self.maximum_payment_fee()
-            .set(BigUint::from(10000u64) * BigUint::from(10u64).pow(18u32));
         self.discount_fee_percentage_buyer()
             .set(BigUint::from(0u64));
         self.discount_fee_percentage_seller()
@@ -39,6 +39,7 @@ pub trait DataMarket:
         &self,
         accepted_token_id: TokenIdentifier,
         payment_token_id: EgldOrEsdtTokenIdentifier,
+        maximum_payment_fee: BigUint,
         treasury_address: ManagedAddress,
     ) {
         require!(
@@ -47,8 +48,11 @@ pub trait DataMarket:
                 && self.accepted_tokens().is_empty(),
             "Contract already initialized"
         );
+        self.set_accepted_token_event(&accepted_token_id);
         self.add_accepted_token(accepted_token_id);
-        self.add_accepted_payment(payment_token_id);
+        self.set_accepted_payment_event(&payment_token_id, &maximum_payment_fee);
+        self.add_accepted_payment(payment_token_id, maximum_payment_fee);
+        self.treasury_address_event(&treasury_address);
         self.set_treasury_address(treasury_address);
     }
 
@@ -79,19 +83,11 @@ pub trait DataMarket:
     }
 
     #[endpoint(addAcceptedPayment)]
-    fn add_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier) {
+    fn add_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier, maximum_fee: BigUint) {
         let caller = self.blockchain().get_caller();
         self.require_is_privileged(&caller);
-        self.set_accepted_payment_token_event(&token_id);
-        self.accepted_payments().insert(token_id);
-    }
-
-    #[endpoint(setMaximumPaymentFee)]
-    fn set_maximum_payment_fee(&self, maximum_payment_fee: BigUint) {
-        let caller = self.blockchain().get_caller();
-        self.require_is_privileged(&caller);
-        self.set_max_sft_fee_event(&maximum_payment_fee);
-        self.maximum_payment_fee().set(&maximum_payment_fee);
+        self.set_accepted_payment_event(&token_id, &maximum_fee);
+        self.accepted_payments().insert(token_id, maximum_fee);
     }
 
     // Endpoint that will be used by privileged address to change the contract pause value.
@@ -117,17 +113,25 @@ pub trait DataMarket:
 
         let mut data_nft = self.call_value().single_esdt();
         require!(
-            self.accepted_payments().contains(&payment_token_id),
+            self.accepted_payments().contains_key(&payment_token_id),
             "Token not accepted"
         );
         require!(
             self.accepted_tokens().contains(&data_nft.token_identifier),
             "Token not accepted"
         );
-        require!(
-            payment_token_fee <= self.maximum_payment_fee().get(),
-            "Payment fee too high"
-        );
+
+        let maximum_fee = self.accepted_payments().get(&payment_token_id);
+
+        match maximum_fee {
+            Some(maximum_fee) => {
+                require!(payment_token_fee <= maximum_fee, "Payment fee too high");
+            }
+            None => {
+                require!(false, "Token not accepted");
+            }
+        }
+
         let payment_token =
             EgldOrEsdtTokenPayment::new(payment_token_id, payment_token_nonce, payment_token_fee);
 
@@ -202,27 +206,6 @@ pub trait DataMarket:
     fn accept_offer(&self, index: u64, quantity: BigUint) {
         self.require_sc_ready_to_trade();
 
-        let buyer_has_discount;
-        let seller_has_discount;
-
-        // [TO DO] check if Buyer has Genesis NFT staked to apply discount
-        // [TO DO] check if the Seller has Genesis NFT staked to apply discount
-        // [TO DO] update the discount boolean values
-
-        // [TO DO] delete after the Genesis Nft staked check is implemented
-        //------- Implemented for the sake of testing
-        if self.discount_fee_percentage_buyer().get() != BigUint::zero() {
-            buyer_has_discount = true;
-        } else {
-            buyer_has_discount = false;
-        }
-        if self.discount_fee_percentage_seller().get() != BigUint::zero() {
-            seller_has_discount = true;
-        } else {
-            seller_has_discount = false;
-        }
-        //-----
-
         let caller = self.blockchain().get_caller();
         let offer_to_accept = self.offers().get(&index);
         let payment = self.call_value().egld_or_single_esdt();
@@ -239,31 +222,16 @@ pub trait DataMarket:
                 let token_attributes =
                     token_data.decode_attributes::<DataNftAttributes<Self::Api>>();
 
-                require!(&caller != &offer.owner, "You cannot accept your own offer");
                 require!(
-                    &caller != &token_attributes.creator,
-                    "You cannot accept your own offer",
+                    &caller != &offer.owner || &caller != &token_attributes.creator,
+                    "You cannot accept your own offer"
                 );
 
-                let buyer_fee = if buyer_has_discount {
-                    self.percentage_cut_from_buyer().get()
-                        - self.discount_fee_percentage_buyer().get()
-                } else {
-                    self.percentage_cut_from_buyer().get()
-                };
-                let seller_fee = if seller_has_discount {
-                    self.percentage_cut_from_seller().get()
-                        - self.discount_fee_percentage_seller().get()
-                } else {
-                    self.percentage_cut_from_seller().get()
-                };
+                let (buyer_has_discount, seller_has_discout) =
+                    self.check_traders_have_discount(&caller, &offer.owner);
 
-                let mut correct_payment_amount = &offer.wanted_token.amount * &quantity;
-                let mut correct_payment_amount_clone = correct_payment_amount.clone();
-
-                let fee_from_buyer =
-                    &correct_payment_amount * &buyer_fee / &BigUint::from(10000u64);
-                correct_payment_amount += &fee_from_buyer;
+                let (buyer_fee, seller_fee) =
+                    self.get_traders_fees(buyer_has_discount, seller_has_discout);
 
                 require!(quantity <= offer.quantity, "Not enough quantity");
                 require!(
@@ -274,64 +242,39 @@ pub trait DataMarket:
                     payment.token_nonce == offer.wanted_token.token_nonce,
                     "Wrong token payment"
                 );
+
+                let (buyer_payment, creator_royalties, fee_from_buyer, fee_from_seller) = self
+                    .compute_fees(
+                        &offer.wanted_token.amount,
+                        &quantity,
+                        &buyer_fee,
+                        &seller_fee,
+                        &token_data.royalties,
+                    );
+
                 require!(
-                    payment.amount == correct_payment_amount,
+                    payment.amount == buyer_payment,
                     "Wrong token payment amount"
                 );
 
-                let fee_from_seller =
-                    &correct_payment_amount * &seller_fee / BigUint::from(10000u64);
-
-                correct_payment_amount_clone -= &fee_from_seller;
-
-                let creator_royalties =
-                    &correct_payment_amount_clone * &token_data.royalties / BigUint::from(10000u64);
-
-                // If the creator setup royalties and is not the offer owner he can benefit the royalties
-                if creator_royalties > BigUint::zero() && token_attributes.creator != offer.owner {
-                    self.send().direct(
-                        &token_attributes.creator,
-                        &offer.wanted_token.token_identifier,
-                        offer.wanted_token.token_nonce,
-                        &creator_royalties,
-                    );
-                    self.send().direct(
-                        &offer.owner,
-                        &offer.wanted_token.token_identifier,
-                        offer.wanted_token.token_nonce,
-                        &(&correct_payment_amount
-                            - &creator_royalties
-                            - &fee_from_seller
-                            - &fee_from_buyer),
-                    );
-                } else {
-                    // Payment to the data NFT-FT seller
-                    self.send().direct(
-                        &offer.owner,
-                        &offer.wanted_token.token_identifier,
-                        offer.wanted_token.token_nonce,
-                        &(&correct_payment_amount - &fee_from_seller - &fee_from_buyer),
-                    );
-                }
-
-                let treasury_address = self.treasury_address().get();
-
                 self.accepted_offer_event(&index, &caller, &quantity);
 
-                self.send().direct(
-                    &treasury_address,
-                    &offer.wanted_token.token_identifier,
-                    offer.wanted_token.token_nonce,
-                    &(&fee_from_seller + &fee_from_buyer),
+                let offered_token = offer.offered_token.clone();
+                let seller = offer.owner.clone();
+
+                self.distribute_tokens(
+                    payment,
+                    offered_token,
+                    &quantity,
+                    caller,
+                    buyer_payment,
+                    fee_from_buyer,
+                    seller,
+                    fee_from_seller,
+                    token_attributes.creator,
+                    creator_royalties,
                 );
 
-                // Data NFT-FT to the buyer
-                self.send().direct_esdt(
-                    &caller,
-                    &offer.offered_token.token_identifier,
-                    offer.offered_token.token_nonce,
-                    &(&offer.offered_token.amount * &quantity),
-                );
                 if offer.quantity == quantity {
                     self.offers().remove(&index);
                     self.empty_offer_indexes().insert(index);

@@ -39,9 +39,10 @@ pub trait EventsModule {
 
     // Emitted whenever a new accepted payment token is set
     #[event("setAcceptedPaymentToken")]
-    fn set_accepted_payment_token_event(
+    fn set_accepted_payment_event(
         &self,
         #[indexed] token_identifier: &EgldOrEsdtTokenIdentifier,
+        #[indexed] max_payment_fee: &BigUint,
     );
 
     // Emitted whenever a maximum sft fee is set

@@ -14,14 +14,11 @@ pub trait ViewsModule: crate::storage::StorageModule {
             .accepted_tokens()
             .iter()
             .collect::<ManagedVec<TokenIdentifier>>();
-        let accepted_payments = self
-            .accepted_payments()
-            .iter()
-            .collect::<ManagedVec<EgldOrEsdtTokenIdentifier>>();
+        let (accepted_payments, maximum_payment_fees) = self.accepted_payments().iter().unzip();
         MarketPlaceRequirements {
             accepted_tokens,
             accepted_payments,
-            maximum_payment_fee: self.maximum_payment_fee().get(),
+            maximum_payment_fees,
             discount_fee_percentage_buyer: self.discount_fee_percentage_buyer().get(),
             discount_fee_percentage_seller: self.discount_fee_percentage_seller().get(),
             percentage_cut_from_buyer: self.percentage_cut_from_buyer().get(),
@@ -30,14 +27,28 @@ pub trait ViewsModule: crate::storage::StorageModule {
     }
 
     #[view(viewOffers)]
-    fn view_offers(&self, from: u64, to: u64) -> ManagedVec<OfferOut<Self::Api>> {
+    fn view_offers(
+        &self,
+        from: u64,
+        to: u64,
+        opt_address: OptionalValue<ManagedAddress>,
+    ) -> ManagedVec<OfferOut<Self::Api>> {
         let mut offers = ManagedVec::new();
         let mut nr = 0;
         let fee = self.percentage_cut_from_buyer().get();
         for (index, offer) in self.offers().iter() {
             if nr >= from {
                 if nr <= to {
-                    offers.push(self.offer_to_offer_out(index, offer, &fee));
+                    match opt_address.clone() {
+                        OptionalValue::Some(address) => {
+                            if address == offer.owner {
+                                offers.push(self.offer_to_offer_out(index, offer, &fee));
+                            }
+                        }
+                        OptionalValue::None => {
+                            offers.push(self.offer_to_offer_out(index, offer, &fee));
+                        }
+                    }
                 } else {
                     break;
                 }
