@@ -3,7 +3,7 @@
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
-use crate::{storage::DataNftAttributes, storage::Offer};
+use crate::storage::DataNftAttributes;
 
 pub mod events;
 pub mod offer_accept_utils;
@@ -32,7 +32,7 @@ pub trait DataMarket:
         self.discount_fee_percentage_seller()
             .set(BigUint::from(0u64));
     }
-
+    // Endpoint that will be used by the contract owner to initialize the contract.
     #[only_owner]
     #[endpoint(initializeContract)]
     fn initialize_contract(
@@ -56,6 +56,7 @@ pub trait DataMarket:
         self.set_treasury_address(treasury_address);
     }
 
+    // Endpoint that will be used by privileged address and contract owner to set the discount percentage cuts.
     #[endpoint(setDiscounts)]
     fn set_discounts(&self, seller_discount: BigUint, buyer_discount: BigUint) {
         let caller = self.blockchain().get_caller();
@@ -65,6 +66,7 @@ pub trait DataMarket:
         self.discount_fee_percentage_seller().set(&seller_discount);
     }
 
+    // Endpoint that will be used by privileged address and contract owner to set the percentage cuts.
     #[endpoint(setFees)]
     fn set_fees(&self, seller_fee: BigUint, buyer_fee: BigUint) {
         let caller = self.blockchain().get_caller();
@@ -74,6 +76,7 @@ pub trait DataMarket:
         self.percentage_cut_from_seller().set(&seller_fee);
     }
 
+    // Endpoint that will be used by privileged address and contract owner to add a new accepted tradable token.
     #[endpoint(addAcceptedToken)]
     fn add_accepted_token(&self, token_id: TokenIdentifier) {
         let caller = self.blockchain().get_caller();
@@ -81,7 +84,7 @@ pub trait DataMarket:
         self.set_accepted_token_event(&token_id);
         self.accepted_tokens().insert(token_id);
     }
-
+    // Endpoint that will be used by privileged address and contract owner to add a new accepted payment.
     #[endpoint(addAcceptedPayment)]
     fn add_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier, maximum_fee: BigUint) {
         let caller = self.blockchain().get_caller();
@@ -99,6 +102,7 @@ pub trait DataMarket:
         self.is_paused().set(is_paused);
     }
 
+    // Endpoint that will be callable by users to add a new offer.
     #[payable("*")]
     #[endpoint(addOffer)]
     fn add_offer(
@@ -111,7 +115,7 @@ pub trait DataMarket:
         self.require_sc_ready_to_trade();
         let caller = self.blockchain().get_caller();
 
-        let mut data_nft = self.call_value().single_esdt();
+        let data_nft = self.call_value().single_esdt();
         require!(
             self.accepted_payments().contains_key(&payment_token_id),
             "Token not accepted"
@@ -122,7 +126,6 @@ pub trait DataMarket:
         );
 
         let maximum_fee = self.accepted_payments().get(&payment_token_id);
-
         match maximum_fee {
             Some(maximum_fee) => {
                 require!(payment_token_fee <= maximum_fee, "Payment fee too high");
@@ -135,45 +138,10 @@ pub trait DataMarket:
         let payment_token =
             EgldOrEsdtTokenPayment::new(payment_token_id, payment_token_nonce, payment_token_fee);
 
-        let real_quantity = BigUint::from(1u64);
-        match opt_quantity {
-            OptionalValue::Some(existing_quantity) => {
-                require!(existing_quantity > 0, "Quantity must be greater than 0");
-                require!(
-                    data_nft.amount >= existing_quantity,
-                    "Quantity must be less than offered token amount"
-                );
-
-                require!(
-                    &data_nft.amount % &existing_quantity == 0,
-                    "Quantity must be a divisor of offered token amount"
-                );
-                data_nft.amount = &data_nft.amount / &existing_quantity;
-
-                let offer = Offer {
-                    owner: caller,
-                    offered_token: data_nft,
-                    wanted_token: payment_token,
-                    quantity: existing_quantity,
-                };
-                let index = self.create_offer_index();
-                self.added_offer_event(&index, &offer);
-                self.offers().insert(index, offer);
-            }
-            OptionalValue::None => {
-                let offer = Offer {
-                    owner: caller,
-                    offered_token: data_nft,
-                    wanted_token: payment_token,
-                    quantity: real_quantity,
-                };
-                let index = self.create_offer_index();
-                self.added_offer_event(&index, &offer);
-                self.offers().insert(index, offer);
-            }
-        };
+        self.create_offer(caller, data_nft, payment_token, opt_quantity);
     }
 
+    // Endpoint that will be callable by offer owner or contract owner to cancel an offer.
     #[endpoint(cancelOffer)]
     fn cancel_offer(&self, index: u64) {
         self.require_sc_ready_to_trade();
@@ -201,6 +169,7 @@ pub trait DataMarket:
         }
     }
 
+    // Endpoint that will be callable by users to accept an offer.
     #[payable("*")]
     #[endpoint(acceptOffer)]
     fn accept_offer(&self, index: u64, quantity: BigUint) {
@@ -222,10 +191,7 @@ pub trait DataMarket:
                 let token_attributes =
                     token_data.decode_attributes::<DataNftAttributes<Self::Api>>();
 
-                require!(
-                    &caller != &offer.owner || &caller != &token_attributes.creator,
-                    "You cannot accept your own offer"
-                );
+                require!(&caller != &offer.owner, "You cannot accept your own offer");
 
                 let (buyer_has_discount, seller_has_discout) =
                     self.check_traders_have_discount(&caller, &offer.owner);

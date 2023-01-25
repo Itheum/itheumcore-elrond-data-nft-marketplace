@@ -12,6 +12,7 @@ use elrond_wasm::types::EgldOrEsdtTokenPayment;
 use elrond_wasm::types::EsdtTokenPayment;
 
 use elrond_wasm::types::ManagedVec;
+use elrond_wasm::types::MultiValueEncoded;
 use elrond_wasm::types::{Address, EsdtLocalRole};
 
 use elrond_wasm_debug::tx_mock::TxContextRef;
@@ -2117,7 +2118,7 @@ fn views_test() {
                 quantity: managed_biguint!(4u64),
             };
 
-            let offers = sc.view_offers(0u64, 1u64, OptionalValue::None);
+            let offers = sc.view_offers_paged(0u64, 1u64, OptionalValue::None);
 
             assert_eq!(offers.get(0usize).index, offer_mock_1.index);
             assert_eq!(offers.get(0usize).owner, offer_mock_1.owner);
@@ -2175,7 +2176,7 @@ fn views_test() {
             );
             assert_eq!(offers.get(1usize).quantity, offer_mock_2.quantity);
 
-            let offers_2 = sc.view_offers(
+            let offers_2 = sc.view_offers_paged(
                 0u64,
                 1u64,
                 OptionalValue::Some(managed_address!(first_user_address)),
@@ -2208,6 +2209,68 @@ fn views_test() {
                 offer_mock_1.wanted_token_amount
             );
             assert_eq!(offers_2.get(0usize).quantity, offer_mock_1.quantity);
+
+            let mut multi_values = MultiValueEncoded::new();
+            multi_values.push(0u64);
+            multi_values.push(1u64);
+
+            let offers_3 = sc.view_offers(multi_values);
+
+            assert_eq!(offers_3.get(0usize).index, offer_mock_1.index);
+            assert_eq!(offers_3.get(0usize).owner, offer_mock_1.owner);
+            assert_eq!(
+                offers_3.get(0usize).offered_token_identifier,
+                offer_mock_1.offered_token_identifier
+            );
+            assert_eq!(
+                offers_3.get(0usize).offered_token_nonce,
+                offer_mock_1.offered_token_nonce
+            );
+            assert_eq!(
+                offers_3.get(0usize).offered_token_amount,
+                offer_mock_1.offered_token_amount
+            );
+            assert_eq!(
+                offers_3.get(0usize).wanted_token_identifier,
+                offer_mock_1.wanted_token_identifier
+            );
+            assert_eq!(
+                offers_3.get(0usize).wanted_token_nonce,
+                offer_mock_1.wanted_token_nonce
+            );
+            assert_eq!(
+                offers_3.get(0usize).wanted_token_amount,
+                offer_mock_1.wanted_token_amount
+            );
+            assert_eq!(offers_3.get(0usize).quantity, offer_mock_1.quantity);
+
+            assert_eq!(offers_3.get(1usize).index, offer_mock_2.index);
+            assert_eq!(offers_3.get(1usize).owner, offer_mock_2.owner);
+            assert_eq!(
+                offers_3.get(1usize).offered_token_identifier,
+                offer_mock_2.offered_token_identifier
+            );
+            assert_eq!(
+                offers_3.get(1usize).offered_token_nonce,
+                offer_mock_2.offered_token_nonce
+            );
+            assert_eq!(
+                offers_3.get(1usize).offered_token_amount,
+                offer_mock_2.offered_token_amount
+            );
+            assert_eq!(
+                offers_3.get(1usize).wanted_token_identifier,
+                offer_mock_2.wanted_token_identifier
+            );
+            assert_eq!(
+                offers_3.get(1usize).wanted_token_nonce,
+                offer_mock_2.wanted_token_nonce
+            );
+            assert_eq!(
+                offers_3.get(1usize).wanted_token_amount,
+                offer_mock_2.wanted_token_amount
+            );
+            assert_eq!(offers_3.get(1usize).quantity, offer_mock_2.quantity);
         })
         .assert_ok();
 

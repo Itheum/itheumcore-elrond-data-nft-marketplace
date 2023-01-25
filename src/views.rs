@@ -8,6 +8,7 @@ use crate::{
 
 #[elrond_wasm::module]
 pub trait ViewsModule: crate::storage::StorageModule {
+    // View that returns the requirements for the marketplace
     #[view(getRequirements)]
     fn view_requirements(&self) -> MarketPlaceRequirements<Self::Api> {
         let accepted_tokens = self
@@ -26,8 +27,10 @@ pub trait ViewsModule: crate::storage::StorageModule {
         }
     }
 
-    #[view(viewOffers)]
-    fn view_offers(
+    // View that returns the offers in a paged manner
+    // If an address is provided, it will only return the offers of that address within the range
+    #[view(viewPagedOffers)]
+    fn view_offers_paged(
         &self,
         from: u64,
         to: u64,
@@ -58,6 +61,17 @@ pub trait ViewsModule: crate::storage::StorageModule {
         offers
     }
 
+    // View that returns specific offers by providing their indexes
+    #[view(viewOffers)]
+    fn view_offers(&self, indexes: MultiValueEncoded<u64>) -> ManagedVec<OfferOut<Self::Api>> {
+        let offers = indexes
+            .into_iter()
+            .flat_map(|index| self.view_offer(index))
+            .collect::<ManagedVec<OfferOut<Self::Api>>>();
+        offers
+    }
+
+    // View that returns a specific offer
     #[view(viewOffer)]
     fn view_offer(&self, index: u64) -> Option<OfferOut<Self::Api>> {
         let offer = self.offers().get(&index);
@@ -69,11 +83,13 @@ pub trait ViewsModule: crate::storage::StorageModule {
         }
     }
 
+    // View that returns the number of offers
     #[view(numberOfOffers)]
     fn view_number_of_offers(&self) -> usize {
         self.offers().len()
     }
 
+    // Function that converts an offer to an offer out (which has more information)
     fn offer_to_offer_out(
         &self,
         index: u64,
@@ -81,7 +97,7 @@ pub trait ViewsModule: crate::storage::StorageModule {
         fee: &BigUint,
     ) -> OfferOut<Self::Api> {
         OfferOut {
-            index: index,
+            index,
             owner: offer.owner,
             offered_token_identifier: offer.offered_token.token_identifier,
             offered_token_nonce: offer.offered_token.token_nonce,

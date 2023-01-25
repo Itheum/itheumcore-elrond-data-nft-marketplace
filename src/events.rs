@@ -45,10 +45,6 @@ pub trait EventsModule {
         #[indexed] max_payment_fee: &BigUint,
     );
 
-    // Emitted whenever a maximum sft fee is set
-    #[event("setMaxSftFee")]
-    fn set_max_sft_fee_event(&self, #[indexed] max_sft_fee: &BigUint);
-
     // Emitted whenever a new offer is created
     #[event("addedOffer")]
     fn added_offer_event(&self, #[indexed] index: &u64, #[indexed] offer: &Offer<Self::Api>);
