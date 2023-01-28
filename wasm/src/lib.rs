@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           27
+// Endpoints:                           28
 // Async Callback (empty):               1
-// Total number of exported functions:  29
+// Total number of exported functions:  30
 
 #![no_std]
 
@@ -38,6 +38,7 @@ elrond_wasm_node::wasm_endpoints! {
         getTreasuryAddress
         getAdministrator
         getRequirements
+        viewOffersPaged
         viewOffers
         viewOffer
         numberOfOffers
