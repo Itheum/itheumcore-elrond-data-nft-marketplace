@@ -5,21 +5,15 @@ use data_market::storage::*;
 use data_market::offer_adding_utils::OfferAddingUtils;
 use data_market::views::ViewsModule;
 use data_market::DataMarket;
-use elrond_wasm::elrond_codec::multi_types::OptionalValue;
-use elrond_wasm::elrond_codec::Empty;
 
-use elrond_wasm::types::EgldOrEsdtTokenPayment;
-use elrond_wasm::types::EsdtTokenPayment;
-
-use elrond_wasm::types::ManagedVec;
-use elrond_wasm::types::MultiValueEncoded;
-use elrond_wasm::types::{Address, EsdtLocalRole};
-
-use elrond_wasm_debug::tx_mock::TxContextRef;
-use elrond_wasm_debug::{
-    managed_address, managed_biguint, managed_buffer, managed_token_id, managed_token_id_wrapped,
-    rust_biguint, testing_framework::*, DebugApi,
+use multiversx_sc::codec::multi_types::OptionalValue;
+use multiversx_sc::codec::Empty;
+use multiversx_sc::types::{
+    Address, EgldOrEsdtTokenPayment, EsdtLocalRole, EsdtTokenPayment, ManagedVec, MultiValueEncoded,
 };
+use multiversx_sc_scenario::multiversx_chain_vm::tx_mock::TxContextRef;
+use multiversx_sc_scenario::testing_framework::{BlockchainStateWrapper, ContractObjWrapper};
+use multiversx_sc_scenario::*;
 
 pub const WASM_PATH: &'static str = "../output/data_market.wasm";
 pub const OWNER_EGLD_BALANCE: u128 = 100 * 10u128.pow(18u32);

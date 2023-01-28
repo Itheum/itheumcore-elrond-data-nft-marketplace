@@ -1,9 +1,9 @@
 use crate::storage::Offer;
 
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
-#[elrond_wasm::module]
+#[multiversx_sc::module]
 pub trait OfferAddingUtils: crate::storage::StorageModule + crate::events::EventsModule {
     fn create_offer_index(&self) -> u64 {
         if self.empty_offer_indexes().is_empty() {
