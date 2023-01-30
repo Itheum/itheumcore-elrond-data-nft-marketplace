@@ -48,10 +48,6 @@ pub trait StorageModule {
     #[storage_mapper("offers")]
     fn offers(&self) -> MapMapper<u64, Offer<Self::Api>>;
 
-    #[view(getUserTotalOffers)]
-    #[storage_mapper("total_offers")]
-    fn total_user_listed_offers(&self, address: &ManagedAddress) -> SingleValueMapper<usize>;
-
     #[view(getUserListedOffers)]
     #[storage_mapper("user_offers")]
     fn user_listed_offers(&self, address: &ManagedAddress) -> UnorderedSetMapper<u64>;

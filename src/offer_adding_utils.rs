@@ -24,7 +24,6 @@ pub trait OfferAddingUtils: crate::storage::StorageModule + crate::events::Event
         payment_token: EgldOrEsdtTokenPayment,
         opt_quantity: OptionalValue<BigUint>,
     ) {
-        let caller = seller.clone();
         let real_quantity = BigUint::from(1u64);
         match opt_quantity {
             OptionalValue::Some(existing_quantity) => {
@@ -40,31 +39,32 @@ pub trait OfferAddingUtils: crate::storage::StorageModule + crate::events::Event
                 );
                 data_nft.amount = &data_nft.amount / &existing_quantity;
 
+                let index = self.create_offer_index();
+                self.user_listed_offers(&seller).insert(index);
+
                 let offer = Offer {
                     owner: seller,
                     offered_token: data_nft,
                     wanted_token: payment_token,
                     quantity: existing_quantity,
                 };
-                let index = self.create_offer_index();
                 self.added_offer_event(&index, &offer);
-                self.user_listed_offers(&caller).insert(index);
                 self.offers().insert(index, offer);
             }
             OptionalValue::None => {
+                let index = self.create_offer_index();
+                self.user_listed_offers(&seller).insert(index);
+
                 let offer = Offer {
                     owner: seller,
                     offered_token: data_nft,
                     wanted_token: payment_token,
                     quantity: real_quantity,
                 };
-                let index = self.create_offer_index();
+
                 self.added_offer_event(&index, &offer);
-                self.user_listed_offers(&caller).insert(index);
                 self.offers().insert(index, offer);
             }
         }
-        self.total_user_listed_offers(&caller)
-            .update(|total| *total += 1);
     }
 }

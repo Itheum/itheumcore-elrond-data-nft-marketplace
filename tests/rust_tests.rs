@@ -1169,8 +1169,8 @@ fn add_offer_test() {
             assert_eq!(sc.offers().len(), 1usize);
             assert_eq!(sc.empty_offer_indexes().len(), 0usize);
             assert_eq!(
-                sc.total_user_listed_offers(&managed_address!(first_user_address))
-                    .get(),
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .len(),
                 1usize
             );
             assert_eq!(
@@ -1285,8 +1285,8 @@ fn add_offer_test() {
             assert_eq!(sc.offers().len(), 2usize);
             assert_eq!(sc.empty_offer_indexes().len(), 0usize);
             assert_eq!(
-                sc.total_user_listed_offers(&managed_address!(second_user_address))
-                    .get(),
+                sc.user_listed_offers(&managed_address!(second_user_address))
+                    .len(),
                 1usize
             );
             assert_eq!(
@@ -1484,13 +1484,13 @@ fn cancel_offer_test() {
             assert_eq!(sc.offers().len(), 0usize);
             assert_eq!(sc.empty_offer_indexes().len(), 2usize);
             assert_eq!(
-                sc.total_user_listed_offers(&managed_address!(first_user_address))
-                    .get(),
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .len(),
                 0usize
             );
             assert_eq!(
-                sc.total_user_listed_offers(&managed_address!(second_user_address))
-                    .get(),
+                sc.user_listed_offers(&managed_address!(second_user_address))
+                    .len(),
                 0usize
             );
             assert_eq!(
@@ -1685,8 +1685,8 @@ fn accept_offer_test() {
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
             assert_eq!(
-                sc.total_user_listed_offers(&managed_address!(second_user_address))
-                    .get(),
+                sc.user_listed_offers(&managed_address!(second_user_address))
+                    .len(),
                 1usize
             );
             assert_eq!(
@@ -1761,8 +1761,8 @@ fn accept_offer_test() {
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
             assert_eq!(
-                sc.total_user_listed_offers(&managed_address!(first_user_address))
-                    .get(),
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .len(),
                 1usize
             );
         })
@@ -1785,8 +1785,8 @@ fn accept_offer_test() {
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
             assert_eq!(
-                sc.total_user_listed_offers(&managed_address!(first_user_address))
-                    .get(),
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .len(),
                 0usize
             );
             assert_eq!(
@@ -2285,6 +2285,11 @@ fn views_test() {
             assert_eq!(offers_2.get(0usize).quantity, offer_mock_1.quantity);
 
             assert_eq!(offers_2.len(), 1usize);
+
+            assert_eq!(
+                sc.view_user_total_offers(&managed_address!(first_user_address)),
+                1usize
+            );
 
             let mut multi_values = MultiValueEncoded::new();
             multi_values.push(0u64);

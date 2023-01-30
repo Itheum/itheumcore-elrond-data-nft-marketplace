@@ -75,6 +75,11 @@ pub trait ViewsModule: crate::storage::StorageModule {
         offers
     }
 
+    #[view(getUserTotalOffers)]
+    fn view_user_total_offers(&self, address: &ManagedAddress) -> usize {
+        self.user_listed_offers(&address).len()
+    }
+
     #[view(viewUserListedOffers)]
     fn view_user_listed_offers(&self, address: &ManagedAddress) -> ManagedVec<OfferOut<Self::Api>> {
         let indexes = self
