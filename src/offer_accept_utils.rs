@@ -1,7 +1,7 @@
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
-#[elrond_wasm::module]
+#[multiversx_sc::module]
 pub trait OfferAcceptUtils: crate::storage::StorageModule {
     // [TO DO] Generic method to check address has Genesis NFT staked
     fn check_traders_have_discount(

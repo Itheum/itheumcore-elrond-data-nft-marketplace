@@ -1,12 +1,12 @@
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
 use crate::{
     storage::Offer,
     storage::{MarketPlaceRequirements, OfferOut},
 };
 
-#[elrond_wasm::module]
+#[multiversx_sc::module]
 pub trait ViewsModule: crate::storage::StorageModule {
     // View that returns the requirements for the marketplace
     #[view(getRequirements)]

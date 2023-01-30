@@ -1,7 +1,7 @@
 #![no_std]
 
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
 use crate::storage::DataNftAttributes;
 
@@ -12,7 +12,7 @@ pub mod requirements;
 pub mod storage;
 pub mod views;
 
-#[elrond_wasm::contract]
+#[multiversx_sc::contract]
 pub trait DataMarket:
     storage::StorageModule
     + requirements::RequirementsModule

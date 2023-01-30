@@ -23,9 +23,7 @@ panic = "abort"
 [dependencies.data_market]
 path = ".."
 
-[dependencies.elrond-wasm-node]
-version = "0.38.0"
+[dependencies.multiversx-sc-wasm-adapter]
+version = "0.39.4"
 
-[dependencies.elrond-wasm-output]
-version = "0.38.0"
-features = [ "wasm-output-mode",]
+
