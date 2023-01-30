@@ -1,9 +1,9 @@
 use crate::storage::Offer;
 
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 // Module that handles event emitting for important smart contract events in order to facilitate logging, debugging and monitoring with ease
-#[elrond_wasm::module]
+#[multiversx_sc::module]
 pub trait EventsModule {
     // Emitted whenever pause toggle is set
     #[event("setMintPauseToggle")]

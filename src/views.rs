@@ -1,12 +1,12 @@
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
 use crate::{
     storage::Offer,
     storage::{MarketPlaceRequirements, OfferOut},
 };
 
-#[elrond_wasm::module]
+#[multiversx_sc::module]
 pub trait ViewsModule: crate::storage::StorageModule {
     // View that returns the requirements for the marketplace
     #[view(getRequirements)]
@@ -39,25 +39,59 @@ pub trait ViewsModule: crate::storage::StorageModule {
         let mut offers = ManagedVec::new();
         let mut nr = 0;
         let fee = self.percentage_cut_from_buyer().get();
-        for (index, offer) in self.offers().iter() {
-            if nr >= from {
-                if nr <= to {
-                    match opt_address.clone() {
-                        OptionalValue::Some(address) => {
-                            if address == offer.owner {
-                                offers.push(self.offer_to_offer_out(index, offer, &fee));
+
+        match opt_address.clone() {
+            OptionalValue::Some(address) => {
+                for index in self.user_listed_offers(&address).iter() {
+                    if nr >= from {
+                        if nr <= to {
+                            let opt_offer = self.offers().get(&index);
+                            match opt_offer {
+                                Option::Some(offer) => {
+                                    offers.push(self.offer_to_offer_out(index, offer, &fee));
+                                }
+                                Option::None => {}
                             }
-                        }
-                        OptionalValue::None => {
-                            offers.push(self.offer_to_offer_out(index, offer, &fee));
+                        } else {
+                            break;
                         }
                     }
-                } else {
-                    break;
+                    nr += 1;
                 }
             }
-            nr += 1;
+            OptionalValue::None => {
+                for (index, offer) in self.offers().iter() {
+                    if nr >= from {
+                        if nr <= to {
+                            offers.push(self.offer_to_offer_out(index, offer, &fee));
+                        } else {
+                            break;
+                        }
+                    }
+                    nr += 1;
+                }
+            }
         }
+        offers
+    }
+
+    #[view(getUserTotalOffers)]
+    fn view_user_total_offers(&self, address: &ManagedAddress) -> usize {
+        self.user_listed_offers(&address).len()
+    }
+
+    #[view(viewUserListedOffers)]
+    fn view_user_listed_offers(&self, address: &ManagedAddress) -> ManagedVec<OfferOut<Self::Api>> {
+        let indexes = self
+            .user_listed_offers(&address)
+            .iter()
+            .collect::<ManagedVec<u64>>();
+
+        let offers = indexes
+            .into_iter()
+            .flat_map(|index| self.view_offer(index))
+            .collect::<ManagedVec<OfferOut<Self::Api>>>();
+
         offers
     }
 

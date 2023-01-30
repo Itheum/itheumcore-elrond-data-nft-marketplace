@@ -1,5 +1,5 @@
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
 #[derive(Clone, NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct Offer<M: ManagedTypeApi> {
@@ -42,11 +42,15 @@ pub struct DataNftAttributes<M: ManagedTypeApi> {
     pub description: ManagedBuffer<M>,
 }
 
-#[elrond_wasm::module]
+#[multiversx_sc::module]
 pub trait StorageModule {
     #[view(getOffers)]
     #[storage_mapper("offers")]
     fn offers(&self) -> MapMapper<u64, Offer<Self::Api>>;
+
+    #[view(getUserListedOffers)]
+    #[storage_mapper("user_offers")]
+    fn user_listed_offers(&self, address: &ManagedAddress) -> UnorderedSetMapper<u64>;
 
     #[view(getAcceptedTokens)]
     #[storage_mapper("accepted_tokens")]

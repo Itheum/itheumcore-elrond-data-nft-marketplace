@@ -5,21 +5,15 @@ use data_market::storage::*;
 use data_market::offer_adding_utils::OfferAddingUtils;
 use data_market::views::ViewsModule;
 use data_market::DataMarket;
-use elrond_wasm::elrond_codec::multi_types::OptionalValue;
-use elrond_wasm::elrond_codec::Empty;
 
-use elrond_wasm::types::EgldOrEsdtTokenPayment;
-use elrond_wasm::types::EsdtTokenPayment;
-
-use elrond_wasm::types::ManagedVec;
-use elrond_wasm::types::MultiValueEncoded;
-use elrond_wasm::types::{Address, EsdtLocalRole};
-
-use elrond_wasm_debug::tx_mock::TxContextRef;
-use elrond_wasm_debug::{
-    managed_address, managed_biguint, managed_buffer, managed_token_id, managed_token_id_wrapped,
-    rust_biguint, testing_framework::*, DebugApi,
+use multiversx_sc::codec::multi_types::OptionalValue;
+use multiversx_sc::codec::Empty;
+use multiversx_sc::types::{
+    Address, EgldOrEsdtTokenPayment, EsdtLocalRole, EsdtTokenPayment, ManagedVec, MultiValueEncoded,
 };
+use multiversx_sc_scenario::multiversx_chain_vm::tx_mock::TxContextRef;
+use multiversx_sc_scenario::testing_framework::{BlockchainStateWrapper, ContractObjWrapper};
+use multiversx_sc_scenario::*;
 
 pub const WASM_PATH: &'static str = "../output/data_market.wasm";
 pub const OWNER_EGLD_BALANCE: u128 = 100 * 10u128.pow(18u32);
@@ -1174,6 +1168,16 @@ fn add_offer_test() {
             assert_eq!(sc.highest_offer_index().get(), 1u64);
             assert_eq!(sc.offers().len(), 1usize);
             assert_eq!(sc.empty_offer_indexes().len(), 0usize);
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .len(),
+                1usize
+            );
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .contains(&0u64),
+                true
+            )
         })
         .assert_ok();
 
@@ -1280,6 +1284,16 @@ fn add_offer_test() {
             assert_eq!(sc.highest_offer_index().get(), 2u64);
             assert_eq!(sc.offers().len(), 2usize);
             assert_eq!(sc.empty_offer_indexes().len(), 0usize);
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(second_user_address))
+                    .len(),
+                1usize
+            );
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(second_user_address))
+                    .contains(&1u64),
+                true
+            );
         })
         .assert_ok();
 
@@ -1469,6 +1483,26 @@ fn cancel_offer_test() {
         .execute_query(&setup.contract_wrapper, |sc| {
             assert_eq!(sc.offers().len(), 0usize);
             assert_eq!(sc.empty_offer_indexes().len(), 2usize);
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .len(),
+                0usize
+            );
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(second_user_address))
+                    .len(),
+                0usize
+            );
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .contains(&0u64),
+                false
+            );
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(second_user_address))
+                    .contains(&1u64),
+                false
+            );
         })
         .assert_ok();
 
@@ -1648,6 +1682,21 @@ fn accept_offer_test() {
         )
         .assert_ok();
 
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(second_user_address))
+                    .len(),
+                1usize
+            );
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(second_user_address))
+                    .contains(&0u64),
+                true
+            );
+        })
+        .assert_ok();
+
     // first sell no royalties
 
     let first_user_balance = b_wrapper.get_esdt_balance(first_user_address, TOKEN_ID, 0u64);
@@ -1710,6 +1759,16 @@ fn accept_offer_test() {
         .assert_ok();
 
     b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .len(),
+                1usize
+            );
+        })
+        .assert_ok();
+
+    b_wrapper
         .execute_esdt_transfer(
             third_user_address,
             &setup.contract_wrapper,
@@ -1721,6 +1780,21 @@ fn accept_offer_test() {
                 sc.accept_offer(1u64, managed_biguint!(1u64));
             },
         )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .len(),
+                0usize
+            );
+            assert_eq!(
+                sc.user_listed_offers(&managed_address!(first_user_address))
+                    .contains(&1u64),
+                false
+            );
+        })
         .assert_ok();
 
     let treasury_address_balance = b_wrapper.get_esdt_balance(treasury_address, TOKEN_ID, 0u64);
@@ -2210,6 +2284,13 @@ fn views_test() {
             );
             assert_eq!(offers_2.get(0usize).quantity, offer_mock_1.quantity);
 
+            assert_eq!(offers_2.len(), 1usize);
+
+            assert_eq!(
+                sc.view_user_total_offers(&managed_address!(first_user_address)),
+                1usize
+            );
+
             let mut multi_values = MultiValueEncoded::new();
             multi_values.push(0u64);
             multi_values.push(1u64);
@@ -2271,6 +2352,65 @@ fn views_test() {
                 offer_mock_2.wanted_token_amount
             );
             assert_eq!(offers_3.get(1usize).quantity, offer_mock_2.quantity);
+
+            let offers_4 = sc.view_user_listed_offers(&managed_address!(first_user_address));
+
+            assert_eq!(offers_4.get(0usize).index, offer_mock_1.index);
+            assert_eq!(offers_4.get(0usize).owner, offer_mock_1.owner);
+            assert_eq!(
+                offers_4.get(0usize).offered_token_identifier,
+                offer_mock_1.offered_token_identifier
+            );
+            assert_eq!(
+                offers_4.get(0usize).offered_token_nonce,
+                offer_mock_1.offered_token_nonce
+            );
+            assert_eq!(
+                offers_4.get(0usize).offered_token_amount,
+                offer_mock_1.offered_token_amount
+            );
+            assert_eq!(
+                offers_4.get(0usize).wanted_token_identifier,
+                offer_mock_1.wanted_token_identifier
+            );
+            assert_eq!(
+                offers_4.get(0usize).wanted_token_nonce,
+                offer_mock_1.wanted_token_nonce
+            );
+            assert_eq!(
+                offers_4.get(0usize).wanted_token_amount,
+                offer_mock_1.wanted_token_amount
+            );
+            assert_eq!(offers_4.get(0usize).quantity, offer_mock_1.quantity);
+
+            let offers_5 = sc.view_user_listed_offers(&managed_address!(second_user_address));
+            assert_eq!(offers_5.get(0usize).index, offer_mock_2.index);
+            assert_eq!(offers_5.get(0usize).owner, offer_mock_2.owner);
+            assert_eq!(
+                offers_5.get(0usize).offered_token_identifier,
+                offer_mock_2.offered_token_identifier
+            );
+            assert_eq!(
+                offers_5.get(0usize).offered_token_nonce,
+                offer_mock_2.offered_token_nonce
+            );
+            assert_eq!(
+                offers_5.get(0usize).offered_token_amount,
+                offer_mock_2.offered_token_amount
+            );
+            assert_eq!(
+                offers_5.get(0usize).wanted_token_identifier,
+                offer_mock_2.wanted_token_identifier
+            );
+            assert_eq!(
+                offers_5.get(0usize).wanted_token_nonce,
+                offer_mock_2.wanted_token_nonce
+            );
+            assert_eq!(
+                offers_5.get(0usize).wanted_token_amount,
+                offer_mock_2.wanted_token_amount
+            );
+            assert_eq!(offers_5.get(0usize).quantity, offer_mock_2.quantity);
         })
         .assert_ok();
 

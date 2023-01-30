@@ -1,7 +1,7 @@
 #![no_std]
 
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
 use crate::storage::DataNftAttributes;
 
@@ -12,7 +12,7 @@ pub mod requirements;
 pub mod storage;
 pub mod views;
 
-#[elrond_wasm::contract]
+#[multiversx_sc::contract]
 pub trait DataMarket:
     storage::StorageModule
     + requirements::RequirementsModule
@@ -163,6 +163,7 @@ pub trait DataMarket:
                 );
                 self.cancelled_offer_event(&index);
                 self.offers().remove(&index);
+                self.user_listed_offers(&offer.owner).swap_remove(&index);
                 self.empty_offer_indexes().insert(index);
             }
             None => sc_panic!("Offer not found"),
@@ -242,6 +243,7 @@ pub trait DataMarket:
                 );
 
                 if offer.quantity == quantity {
+                    self.user_listed_offers(&offer.owner).swap_remove(&index);
                     self.offers().remove(&index);
                     self.empty_offer_indexes().insert(index);
                 } else {
