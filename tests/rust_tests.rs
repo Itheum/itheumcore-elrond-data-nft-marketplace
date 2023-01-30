@@ -2284,6 +2284,8 @@ fn views_test() {
             );
             assert_eq!(offers_2.get(0usize).quantity, offer_mock_1.quantity);
 
+            assert_eq!(offers_2.len(), 1usize);
+
             let mut multi_values = MultiValueEncoded::new();
             multi_values.push(0u64);
             multi_values.push(1u64);

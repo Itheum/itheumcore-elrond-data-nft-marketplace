@@ -39,24 +39,38 @@ pub trait ViewsModule: crate::storage::StorageModule {
         let mut offers = ManagedVec::new();
         let mut nr = 0;
         let fee = self.percentage_cut_from_buyer().get();
-        for (index, offer) in self.offers().iter() {
-            if nr >= from {
-                if nr <= to {
-                    match opt_address.clone() {
-                        OptionalValue::Some(address) => {
-                            if address == offer.owner {
-                                offers.push(self.offer_to_offer_out(index, offer, &fee));
+
+        match opt_address.clone() {
+            OptionalValue::Some(address) => {
+                for index in self.user_listed_offers(&address).iter() {
+                    if nr >= from {
+                        if nr <= to {
+                            let opt_offer = self.offers().get(&index);
+                            match opt_offer {
+                                Option::Some(offer) => {
+                                    offers.push(self.offer_to_offer_out(index, offer, &fee));
+                                }
+                                Option::None => {}
                             }
-                        }
-                        OptionalValue::None => {
-                            offers.push(self.offer_to_offer_out(index, offer, &fee));
+                        } else {
+                            break;
                         }
                     }
-                } else {
-                    break;
+                    nr += 1;
                 }
             }
-            nr += 1;
+            OptionalValue::None => {
+                for (index, offer) in self.offers().iter() {
+                    if nr >= from {
+                        if nr <= to {
+                            offers.push(self.offer_to_offer_out(index, offer, &fee));
+                        } else {
+                            break;
+                        }
+                    }
+                    nr += 1;
+                }
+            }
         }
         offers
     }
