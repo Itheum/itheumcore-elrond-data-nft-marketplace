@@ -163,7 +163,10 @@ pub trait DataMarket:
                 );
                 self.cancelled_offer_event(&index);
                 self.offers().remove(&index);
+                self.user_listed_offers(&offer.owner).swap_remove(&index);
                 self.empty_offer_indexes().insert(index);
+                self.total_user_listed_offers(&offer.owner)
+                    .update(|total| *total -= 1);
             }
             None => sc_panic!("Offer not found"),
         }
@@ -242,6 +245,9 @@ pub trait DataMarket:
                 );
 
                 if offer.quantity == quantity {
+                    self.user_listed_offers(&offer.owner).swap_remove(&index);
+                    self.total_user_listed_offers(&offer.owner)
+                        .update(|total| *total -= 1);
                     self.offers().remove(&index);
                     self.empty_offer_indexes().insert(index);
                 } else {

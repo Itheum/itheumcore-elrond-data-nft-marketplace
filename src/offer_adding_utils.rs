@@ -24,6 +24,7 @@ pub trait OfferAddingUtils: crate::storage::StorageModule + crate::events::Event
         payment_token: EgldOrEsdtTokenPayment,
         opt_quantity: OptionalValue<BigUint>,
     ) {
+        let caller = seller.clone();
         let real_quantity = BigUint::from(1u64);
         match opt_quantity {
             OptionalValue::Some(existing_quantity) => {
@@ -47,6 +48,7 @@ pub trait OfferAddingUtils: crate::storage::StorageModule + crate::events::Event
                 };
                 let index = self.create_offer_index();
                 self.added_offer_event(&index, &offer);
+                self.user_listed_offers(&caller).insert(index);
                 self.offers().insert(index, offer);
             }
             OptionalValue::None => {
@@ -58,8 +60,11 @@ pub trait OfferAddingUtils: crate::storage::StorageModule + crate::events::Event
                 };
                 let index = self.create_offer_index();
                 self.added_offer_event(&index, &offer);
+                self.user_listed_offers(&caller).insert(index);
                 self.offers().insert(index, offer);
             }
         }
+        self.total_user_listed_offers(&caller)
+            .update(|total| *total += 1);
     }
 }
