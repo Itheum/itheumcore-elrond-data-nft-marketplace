@@ -50,21 +50,30 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         seller_fee: &BigUint,
         creator_royalties: &BigUint,
     ) -> (BigUint, BigUint, BigUint, BigUint) {
-        let mut buyer_payment = amount * quantity;
+        if amount == &BigUint::zero() {
+            let buyer_payment = amount * quantity;
+            let fee_from_buyer = BigUint::zero();
+            let fee_from_seller = BigUint::zero();
+            let royalties = BigUint::zero();
 
-        let mut seller_payment = buyer_payment.clone();
+            (buyer_payment, royalties, fee_from_buyer, fee_from_seller)
+        } else {
+            let mut buyer_payment = amount * quantity;
 
-        let fee_from_buyer = &buyer_payment * buyer_fee / &BigUint::from(10000u64);
+            let mut seller_payment = buyer_payment.clone();
 
-        buyer_payment += &fee_from_buyer;
+            let fee_from_buyer = &buyer_payment * buyer_fee / &BigUint::from(10000u64);
 
-        let fee_from_seller = &seller_payment * seller_fee / BigUint::from(10000u64);
+            buyer_payment += &fee_from_buyer;
 
-        seller_payment -= &fee_from_seller;
+            let fee_from_seller = &seller_payment * seller_fee / BigUint::from(10000u64);
 
-        let royalties = &seller_payment * creator_royalties / BigUint::from(10000u64);
+            seller_payment -= &fee_from_seller;
 
-        (buyer_payment, royalties, fee_from_buyer, fee_from_seller)
+            let royalties = &seller_payment * creator_royalties / BigUint::from(10000u64);
+
+            (buyer_payment, royalties, fee_from_buyer, fee_from_seller)
+        }
     }
 
     fn distribute_tokens(

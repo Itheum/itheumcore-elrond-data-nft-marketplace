@@ -49,6 +49,10 @@ pub trait EventsModule {
     #[event("addedOffer")]
     fn added_offer_event(&self, #[indexed] index: &u64, #[indexed] offer: &Offer<Self::Api>);
 
+    // Emitted whenever an offer price is updated
+    #[event("updatedOfferPrice")]
+    fn updated_offer_price_event(&self, #[indexed] index: &u64, #[indexed] price: &BigUint);
+
     // Emitted whenever an offer is cancelled
     #[event("cancelledOffer")]
     fn cancelled_offer_event(&self, #[indexed] index: &u64);
