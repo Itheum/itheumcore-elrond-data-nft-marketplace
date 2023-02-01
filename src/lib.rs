@@ -130,9 +130,7 @@ pub trait DataMarket:
             Some(maximum_fee) => {
                 require!(payment_token_fee <= maximum_fee, "Payment fee too high");
             }
-            None => {
-                require!(false, "Token not accepted");
-            }
+            None => sc_panic!("Token not accepted"),
         }
 
         let payment_token =
@@ -141,30 +139,69 @@ pub trait DataMarket:
         self.create_offer(caller, data_nft, payment_token, opt_quantity);
     }
 
+    #[endpoint(changePrice)]
+    fn change_offer_price(&self, index: u64, new_fee: BigUint) {
+        self.require_sc_ready_to_trade();
+        let caller = self.blockchain().get_caller();
+        let offer_to_change = self.offers().get(&index);
+        match offer_to_change {
+            Some(mut offer) => {
+                require!(offer.owner == caller, "Only offer owner can change price");
+
+                let token_identifier = offer.wanted_token.token_identifier;
+                let nonce = offer.wanted_token.token_nonce;
+
+                let maximum_fee = self.accepted_payments().get(&token_identifier);
+                match maximum_fee {
+                    Some(maximum_fee) => {
+                        require!(new_fee <= maximum_fee, "Payment fee too high");
+                    }
+                    None => sc_panic!("Token not accepted"),
+                }
+                self.updated_offer_price_event(&index, &new_fee);
+                let payment_token = EgldOrEsdtTokenPayment::new(token_identifier, nonce, new_fee);
+
+                offer.wanted_token = payment_token;
+                self.offers().insert(index, offer);
+            }
+            None => sc_panic!("Offer not found"),
+        }
+    }
+
     // Endpoint that will be callable by offer owner or contract owner to cancel an offer.
     #[endpoint(cancelOffer)]
-    fn cancel_offer(&self, index: u64) {
+    fn cancel_offer(&self, index: u64, quantity: BigUint) {
         self.require_sc_ready_to_trade();
         let offer_to_cancel = self.offers().get(&index);
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
 
         match offer_to_cancel {
-            Some(offer) => {
+            Some(mut offer) => {
+                require!(offer.quantity >= quantity, "Quantity too high");
+
                 require!(
                     &caller == &offer.owner || &caller == &sc_owner,
                     "Only special addresses can cancel offers"
                 );
+
                 self.send().direct_esdt(
                     &offer.owner,
                     &offer.offered_token.token_identifier,
                     offer.offered_token.token_nonce,
-                    &(offer.offered_token.amount * offer.quantity),
+                    &(&offer.offered_token.amount * &quantity),
                 );
+
+                if offer.quantity == quantity {
+                    self.user_listed_offers(&offer.owner).swap_remove(&index);
+                    self.offers().remove(&index);
+                    self.empty_offer_indexes().insert(index);
+                } else {
+                    offer.quantity -= quantity;
+                    self.offers().insert(index, offer);
+                }
+
                 self.cancelled_offer_event(&index);
-                self.offers().remove(&index);
-                self.user_listed_offers(&offer.owner).swap_remove(&index);
-                self.empty_offer_indexes().insert(index);
             }
             None => sc_panic!("Offer not found"),
         }
