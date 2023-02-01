@@ -139,7 +139,7 @@ pub trait DataMarket:
         self.create_offer(caller, data_nft, payment_token, opt_quantity);
     }
 
-    #[endpoint(changePrice)]
+    #[endpoint(changeOfferPrice)]
     fn change_offer_price(&self, index: u64, new_fee: BigUint) {
         self.require_sc_ready_to_trade();
         let caller = self.blockchain().get_caller();
