@@ -4,6 +4,7 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use crate::storage::DataNftAttributes;
+use crate::storage::OfferType;
 
 pub mod events;
 pub mod offer_accept_utils;
@@ -238,14 +239,17 @@ pub trait DataMarket:
                     self.get_traders_fees(buyer_has_discount, seller_has_discout);
 
                 require!(quantity <= offer.quantity, "Not enough quantity");
-                require!(
-                    payment.token_identifier == offer.wanted_token.token_identifier,
-                    "Wrong token payment"
-                );
-                require!(
-                    payment.token_nonce == offer.wanted_token.token_nonce,
-                    "Wrong token payment"
-                );
+
+                if self.status(&offer.wanted_token.amount) == OfferType::PaymentOffer {
+                    require!(
+                        payment.token_identifier == offer.wanted_token.token_identifier,
+                        "Wrong token payment"
+                    );
+                    require!(
+                        payment.token_nonce == offer.wanted_token.token_nonce,
+                        "Wrong token payment"
+                    );
+                }
 
                 let (buyer_payment, creator_royalties, fee_from_buyer, fee_from_seller) = self
                     .compute_fees(

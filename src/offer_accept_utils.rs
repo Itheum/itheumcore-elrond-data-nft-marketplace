@@ -1,8 +1,18 @@
+use crate::storage::OfferType;
+
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 #[multiversx_sc::module]
 pub trait OfferAcceptUtils: crate::storage::StorageModule {
+    fn status(&self, amount: &BigUint) -> OfferType {
+        if amount == &BigUint::zero() {
+            OfferType::FreeOffer
+        } else {
+            OfferType::PaymentOffer
+        }
+    }
+
     // [TO DO] Generic method to check address has Genesis NFT staked
     fn check_traders_have_discount(
         &self,

@@ -1,6 +1,12 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
+#[derive(TopEncode, TopDecode, TypeAbi, PartialEq, Eq, Clone, Copy, Debug)]
+pub enum OfferType {
+    PaymentOffer,
+    FreeOffer,
+}
+
 #[derive(Clone, NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct Offer<M: ManagedTypeApi> {
     pub owner: ManagedAddress<M>,
