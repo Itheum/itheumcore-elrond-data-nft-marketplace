@@ -4,6 +4,7 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use crate::storage::DataNftAttributes;
+use crate::storage::OfferType;
 
 pub mod events;
 pub mod offer_accept_utils;
@@ -171,7 +172,6 @@ pub trait DataMarket:
     // Endpoint that will be callable by offer owner or contract owner to cancel an offer.
     #[endpoint(cancelOffer)]
     fn cancel_offer(&self, index: u64, quantity: BigUint) {
-        self.require_sc_ready_to_trade();
         let offer_to_cancel = self.offers().get(&index);
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
@@ -180,8 +180,14 @@ pub trait DataMarket:
             Some(mut offer) => {
                 require!(offer.quantity >= quantity, "Quantity too high");
 
+                if &caller == &offer.owner {
+                    self.require_sc_ready_to_trade();
+                }
+
                 require!(
-                    &caller == &offer.owner || &caller == &sc_owner,
+                    &caller == &offer.owner
+                        || &caller == &sc_owner
+                        || &caller == &self.administrator().get(),
                     "Only special addresses can cancel offers"
                 );
 
@@ -238,14 +244,8 @@ pub trait DataMarket:
                     self.get_traders_fees(buyer_has_discount, seller_has_discout);
 
                 require!(quantity <= offer.quantity, "Not enough quantity");
-                require!(
-                    payment.token_identifier == offer.wanted_token.token_identifier,
-                    "Wrong token payment"
-                );
-                require!(
-                    payment.token_nonce == offer.wanted_token.token_nonce,
-                    "Wrong token payment"
-                );
+
+                let offer_type = self.check_offer_type(&offer.wanted_token.amount);
 
                 let (buyer_payment, creator_royalties, fee_from_buyer, fee_from_seller) = self
                     .compute_fees(
@@ -254,12 +254,24 @@ pub trait DataMarket:
                         &buyer_fee,
                         &seller_fee,
                         &token_data.royalties,
+                        &offer_type,
                     );
 
-                require!(
-                    payment.amount == buyer_payment,
-                    "Wrong token payment amount"
-                );
+                if offer_type == OfferType::PaymentOffer {
+                    require!(
+                        payment.token_identifier == offer.wanted_token.token_identifier,
+                        "Wrong token payment"
+                    );
+                    require!(
+                        payment.token_nonce == offer.wanted_token.token_nonce,
+                        "Wrong token payment"
+                    );
+
+                    require!(
+                        payment.amount == buyer_payment,
+                        "Wrong token payment amount"
+                    );
+                }
 
                 self.accepted_offer_event(&index, &caller, &quantity);
 
