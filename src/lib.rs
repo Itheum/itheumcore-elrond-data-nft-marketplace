@@ -240,16 +240,7 @@ pub trait DataMarket:
 
                 require!(quantity <= offer.quantity, "Not enough quantity");
 
-                if self.status(&offer.wanted_token.amount) == OfferType::PaymentOffer {
-                    require!(
-                        payment.token_identifier == offer.wanted_token.token_identifier,
-                        "Wrong token payment"
-                    );
-                    require!(
-                        payment.token_nonce == offer.wanted_token.token_nonce,
-                        "Wrong token payment"
-                    );
-                }
+                let offer_type = self.check_offer_type(&offer.wanted_token.amount);
 
                 let (buyer_payment, creator_royalties, fee_from_buyer, fee_from_seller) = self
                     .compute_fees(
@@ -258,12 +249,24 @@ pub trait DataMarket:
                         &buyer_fee,
                         &seller_fee,
                         &token_data.royalties,
+                        &offer_type,
                     );
 
-                require!(
-                    payment.amount == buyer_payment,
-                    "Wrong token payment amount"
-                );
+                if offer_type == OfferType::PaymentOffer {
+                    require!(
+                        payment.token_identifier == offer.wanted_token.token_identifier,
+                        "Wrong token payment"
+                    );
+                    require!(
+                        payment.token_nonce == offer.wanted_token.token_nonce,
+                        "Wrong token payment"
+                    );
+
+                    require!(
+                        payment.amount == buyer_payment,
+                        "Wrong token payment amount"
+                    );
+                }
 
                 self.accepted_offer_event(&index, &caller, &quantity);
 
