@@ -172,7 +172,6 @@ pub trait DataMarket:
     // Endpoint that will be callable by offer owner or contract owner to cancel an offer.
     #[endpoint(cancelOffer)]
     fn cancel_offer(&self, index: u64, quantity: BigUint) {
-        self.require_sc_ready_to_trade();
         let offer_to_cancel = self.offers().get(&index);
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
@@ -181,8 +180,14 @@ pub trait DataMarket:
             Some(mut offer) => {
                 require!(offer.quantity >= quantity, "Quantity too high");
 
+                if &caller == &offer.owner {
+                    self.require_sc_ready_to_trade();
+                }
+
                 require!(
-                    &caller == &offer.owner || &caller == &sc_owner,
+                    &caller == &offer.owner
+                        || &caller == &sc_owner
+                        || &caller == &self.administrator().get(),
                     "Only special addresses can cancel offers"
                 );
 

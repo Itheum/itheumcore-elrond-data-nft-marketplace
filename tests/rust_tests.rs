@@ -182,6 +182,7 @@ fn deploy_test() {
                 sc.discount_fee_percentage_seller().get(),
                 managed_biguint!(0u64)
             );
+            assert_eq!(sc.is_paused().get(), true);
         })
         .assert_ok();
 }
@@ -662,6 +663,31 @@ fn requirements_test() {
                     0u64,
                     managed_biguint!(100),
                     OptionalValue::Some(managed_biguint!(2u64)),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_administrator(managed_address!(second_user_address));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            &second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
                 );
             },
         )
@@ -1349,6 +1375,18 @@ fn cancel_offer_test() {
     let treasury_address = &setup.treasury_address;
     let first_user_address = &setup.first_user_address;
     let second_user_address = &setup.second_user_address;
+    let administrator_address = &setup.third_user_address;
+
+    b_wrapper
+        .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_is_paused(true);
+            },
+        )
+        .assert_ok();
 
     b_wrapper
         .execute_tx(
@@ -1359,7 +1397,7 @@ fn cancel_offer_test() {
                 sc.cancel_offer(0u64, managed_biguint!(1u64));
             },
         )
-        .assert_user_error("Marketplace trade is not ready");
+        .assert_user_error("Offer not found");
 
     // Test add_accepted_payment function
     b_wrapper
@@ -1384,6 +1422,17 @@ fn cancel_offer_test() {
             &rust_biguint!(0u64),
             |sc| {
                 sc.add_accepted_token(managed_token_id!(SFT_TICKER));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_administrator(managed_address!(administrator_address));
             },
         )
         .assert_ok();
@@ -1491,6 +1540,17 @@ fn cancel_offer_test() {
         .assert_ok();
 
     b_wrapper
+        .execute_tx(
+            administrator_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.cancel_offer(1u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
             assert_eq!(sc.offers().len(), 1usize);
             assert_eq!(sc.empty_offer_indexes().len(), 1usize);
@@ -1521,7 +1581,7 @@ fn cancel_offer_test() {
         &setup.contract_wrapper.address_ref(),
         SFT_TICKER,
         2u64,
-        &rust_biguint!(10u64),
+        &rust_biguint!(5u64),
         Option::<&Empty>::None,
     );
 

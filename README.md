@@ -201,20 +201,36 @@ Example: "ESDTNFTTransfer@444154414e46542d613631333137@01@0a@30bf219fe20c3918f1d
 
 Example: "ESDTNFTTransfer@444154414e46542d613631333137@01@0a@30bf219fe20c3918f1d32e98c37b9eab14a2a5bb4bf0871fdb1186683e0d4832@6164644f66666572@2049544845554d2d613631333137@00@01a055690d9db80000@01" - opt_quantity is set
 
+#### changePrice
+
+````rust§
+#[endpoint(changeOfferPrice)]
+    fn change_offer_price(&self,
+     index: u64,
+     new_fee: BigUint
+     ),
 #### cancelOffer
+```
+
+Endpoint that lets the seller change the price of their offers. The seller can change only their offers. It takes the offer index and the new price.
+
+Call structure: "changeOfferPrice" + "@" + index hex encoded + "@" + new_fee hex encoded.
+
+Example: "changeOfferPrice@00@91b77e5e5d9a0000"
 
 ```rust
 #[endpoint(cancelOffer)]
     fn cancel_offer(&self,
-    index: u64
+    index: u64,
+    quantity: BigUint,
     );
-```
+````
 
-Endpoint that lets the seller cancel their offers. The seller can cancel only their offers. The owner can cancel any offer. It takes the offer index as an argument.
+Endpoint that lets the seller cancel their offers. The seller can cancel only their offers. The owner and administrator can cancel any offer. It takes the offer index and the quantity that needs to be cancelled. The quantity is the same as in the addOffer endpoint.
 
-Call structure: "cancelOffer" + "@" + index hex encoded.
+Call structure: "cancelOffer" + "@" + index hex encoded + "@" + quantity hex encoded.
 
-Example: "cancelOffer@00"
+Example: "cancelOffer@00@02"
 
 #### acceptOffer
 
