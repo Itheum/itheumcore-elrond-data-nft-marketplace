@@ -33,6 +33,7 @@ pub trait DataMarket:
         self.discount_fee_percentage_seller()
             .set(BigUint::from(0u64));
     }
+    
     // Endpoint that will be used by the contract owner to initialize the contract.
     #[only_owner]
     #[endpoint(initializeContract)]
@@ -85,6 +86,7 @@ pub trait DataMarket:
         self.set_accepted_token_event(&token_id);
         self.accepted_tokens().insert(token_id);
     }
+    
     // Endpoint that will be used by privileged address and contract owner to add a new accepted payment.
     #[endpoint(addAcceptedPayment)]
     fn add_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier, maximum_fee: BigUint) {
@@ -237,11 +239,11 @@ pub trait DataMarket:
 
                 require!(&caller != &offer.owner, "You cannot accept your own offer");
 
-                let (buyer_has_discount, seller_has_discout) =
+                let (buyer_has_discount, seller_has_discount) =
                     self.check_traders_have_discount(&caller, &offer.owner);
 
                 let (buyer_fee, seller_fee) =
-                    self.get_traders_fees(buyer_has_discount, seller_has_discout);
+                    self.get_traders_fees(buyer_has_discount, seller_has_discount);
 
                 require!(quantity <= offer.quantity, "Not enough quantity");
 

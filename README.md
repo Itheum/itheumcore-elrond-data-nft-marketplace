@@ -36,7 +36,7 @@ The setup workflow for the smart contract is as follows:
     fn init(&self);
 ```
 
-The init function is called when deploying or upgrading the smart contract. It receives no arguments and does the following: pauses the contract, sets the trading fee to 2%, sets the maximum price per offer to 10_000, sets the discount for sellers and buyers to 0%.
+The init function is called when deploying or upgrading the smart contract. It receives no arguments and does the following: pauses the contract, sets the trading fee to 2% and sets the discount for sellers and buyers to 0%.
 
 ### Only owner endpoints
 
@@ -68,7 +68,7 @@ Example: initializeContract@444154414e46542d613631333137@2049544845554d2d6136313
  );
 ```
 
-Endpoint that sets the treasury address. The treasury address is the address that will receive the anti spam tax when minting a Data NFT-FT.
+Endpoint that sets the treasury address. The treasury address is the address that will receive buyer/seller fee when a trade completes.
 
 Call structure: "setTreasuryAddress" + "@" + address hex encoded.
 
@@ -166,7 +166,7 @@ Example: "addAcceptedPayment@2049544845554d2d613631333137"
     );
 ```
 
-Endpoint that sets the value of the pause variable. This variable is used to determined whether minting Data NFT-FT is activated or not.
+Endpoint that sets the value of the pause variable. This variable is used to determined whether the marketplace is paused (i.e. does not allow offers to be placed or redeemed)
 
 Call structure: "setIsPaused" + "@" + is_paused hex encoded.
 
@@ -203,13 +203,12 @@ Example: "ESDTNFTTransfer@444154414e46542d613631333137@01@0a@30bf219fe20c3918f1d
 
 #### changePrice
 
-````rust§
+```rust
 #[endpoint(changeOfferPrice)]
     fn change_offer_price(&self,
      index: u64,
      new_fee: BigUint
-     ),
-#### cancelOffer
+     )
 ```
 
 Endpoint that lets the seller change the price of their offers. The seller can change only their offers. It takes the offer index and the new price.
@@ -217,6 +216,9 @@ Endpoint that lets the seller change the price of their offers. The seller can c
 Call structure: "changeOfferPrice" + "@" + index hex encoded + "@" + new_fee hex encoded.
 
 Example: "changeOfferPrice@00@91b77e5e5d9a0000"
+
+
+#### cancelOffer
 
 ```rust
 #[endpoint(cancelOffer)]
@@ -280,23 +282,24 @@ Example: "viewOffer@00"
 
 ## Development
 
-This smart contract aims to offer the Elrond community an audited NFT minter smart contract that is easy to use, well documented and secure.
+This smart contract aims to offer the Elrond community an audited NFT marketplace smart contract that is easy to use, well documented and secure.
 
 ### Setting up dev environment (project development bootstrap)
 
-- Uses `elrond-wasm-* 0.38.0` SDK libs (see Cargo.toml)
-- Building requires minimum **erdpy 2.0.0** (newer version should also work but devs used 2.0.0). Check version using `erdpy --version`
-- To build the project, requires minimum Rust version `1.68.0-nightly`. Check your Rust version by running `rustc --version`. To update your Rust, run `rustup update`. To set to nightly run `rustup default nightly`
-- After you make sure you have the minimum Rust version you can then begin development. After you clone repo and before you run build, deploy or run the tests - follow these steps (most likely only needed the 1st time)
+- Uses `multiversx-sc-* 0.39.4` SDK libs (see Cargo.toml)
+- Building requires minimum **mxpy 5.2.3** (newer version should also work but devs used 5.2.3). Check version using `mxpy --version`
+- To build the project, requires minimum Rust version `1.68.0-nightly`. Check your Rust version by running `rustc --version`. To update your Rust, run `rustup update`. To set to nightly run `rustup default nightly` (devs used 1.69.0-nightly)
+- After you make sure you have the minimum Rust version you can then begin development. After you clone repo and before you run build, deploy or run the tests - follow these steps
 
 ```
 rustup default nightly
-erdpy deps install rust --overwrite
+mxpy deps install rust --overwrite
 cargo clean
 cargo build
 ```
 
-- The above should all work without any errors, next you can successfully run the following command to build via erdpy: `erdpy contract build`
+- The above should all work without any errors, next you can successfully run the following command to build via mxpy: `mxpy contract build` 
+- mxpy may ask you to install `nodejs` and `wasm-opt` to optimize the build, if so then follow instructions given by mxpy and do this
 - You can now run the tests. See "How to test" section below
 - You can now update code as needed
 
@@ -308,17 +311,18 @@ The Smart Contract is structured in 6 files:
 - storage: This file has all the storage/memory declaration of the smart contract. This is the main file that allows the smart contract to save data in the blockchain.
 - views: This file contains all the read-only endpoints of the smart contract. These endpoints are used to retrieve relevant data from the smart contract.
 - requirements: This file contains requirements for the endpoints of the smart contract. In order to avoid code duplication, encourage a healthy project structure and increase code readability we have decided to separate most of the requirements that would otherwise have been duplicated from the endpoints and put them here.
-- nft_mint_utils: This file contains helper functions for minting SFTs.
+- offer_accept_utils: utils to accept an offer
+- offer_adding_utils: utils to add an offer
 - lib: This is the main file of the smart contract, where all the logic of the smart contract is implemented. This connects all the other files (modules) and uses them to implement what is the contract itself.
 
 ### How to test
 
-Prior to running the below, make sure you check section called **Setting up dev environment (project development bootstrap)** above and your dev environment is configured correctly. You also need to run `erdpy contract build` (requires you to be online with internet connection) prior to running tests.
+Prior to running the below, make sure you check section called **Setting up dev environment (project development bootstrap)** above and your dev environment is configured correctly. You also need to run `mxpy contract build` (requires you to be online with internet connection) prior to running tests.
 
 The tests are located in the tests folder, in the rust_tests file. In order to run the tests one can use the command:
 
 ```shell
-    cargo test --package datanftmint --test rust_tests --  --nocapture
+    cargo test --package data_market --test rust_tests --  --nocapture
 ```
 
 Another way of running the tests is by using the rust-analyzer extension in Visual Studio Code, which is also very helpful for Elrond Smart Contract development. If one has the extension installed, they can go open and go to the top of the rust_tests file and click the Run Tests button.

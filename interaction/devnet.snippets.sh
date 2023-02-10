@@ -5,17 +5,16 @@ WALLET="./wallet.pem"
 SELLER="./wallet2.pem"
 BUYER="./wallet3.pem"
 
-ADDRESS=$(erdpy data load --key=address-devnet)
-DEPLOY_TRANSACTION=$(erdpy data load --key=deployTransaction-devnet)
+ADDRESS=$(mxpy data load --key=address-devnet)
+DEPLOY_TRANSACTION=$(mxpy data load --key=deployTransaction-devnet)
 
 TOKEN="ITHEUM-a61317"
 TOKEN_HEX="0x$(echo -n ${TOKEN} | xxd -p -u | tr -d '\n')"
 
 deploy(){
-    erdpy --verbose contract deploy \
+    mxpy --verbose contract deploy \
     --bytecode output/data_market.wasm \
     --outfile deployOutput \
-    --metadata-not-readable \
     --pem ${WALLET} \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
@@ -24,25 +23,30 @@ deploy(){
     --recall-nonce \
     --outfile="./interaction/deploy-devnet.interaction.json" || return
 
-    TRANSACTION=$(erdpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['emittedTransactionHash']")
-    ADDRESS=$(erdpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['contractAddress']")
+    TRANSACTION=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['emittedTransactionHash']")
+    ADDRESS=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['contractAddress']")
 
-    erdpy data store --key=address-devnet --value=${ADDRESS}
-    erdpy data store --key=deployTransaction-devnet --value=${TRANSACTION}
+    mxpy data store --key=address-devnet --value=${ADDRESS}
+    mxpy data store --key=deployTransaction-devnet --value=${TRANSACTION}
 }
 
+# if you interact without calling deploy(), then you need to 1st run this to restore the vars from data
+restoreDeployData() {
+  TRANSACTION=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['emittedTransactionHash']")
+  ADDRESS=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['contractAddress']")
+}
 
 initializeContract(){
     # $1 = token identifier of the collection to be traded
-    # $2 = token identifier of the accetepted token payment
+    # $2 = token identifier of the accepted token payment
     # $3 = maximum payment fee per SFT
     # $4 = treasury address
 
     token_identifier_collection="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
     token_identifier_payment="0x$(echo -n ${2} | xxd -p -u | tr -d '\n')"
-    treasury_address="0x$(erdpy wallet bech32 --decode ${4})"
+    treasury_address="0x$(mxpy wallet bech32 --decode ${4})"
 
-    erdpy --verbose contract call ${ADDRESS} \
+    mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=8000000 \
@@ -54,7 +58,7 @@ initializeContract(){
 }
 
 pauseContract(){
-    erdpy --verbose contract call ${ADDRESS} \
+    mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=6000000 \
@@ -66,7 +70,7 @@ pauseContract(){
 }
 
 unPauseContract(){
-    erdpy --verbose contract call ${ADDRESS} \
+    mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=6000000 \
@@ -77,13 +81,12 @@ unPauseContract(){
     --send || return
 }
 
-
 setTreasuryAddress(){
     # $1 = treasury address
 
-    treasury_address="0x$(erdpy wallet bech32 --decode ${1})"
+    treasury_address="0x$(mxpy wallet bech32 --decode ${1})"
 
-    erdpy --verbose contract call ${ADDRESS} \
+    mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=6000000 \
@@ -97,9 +100,9 @@ setTreasuryAddress(){
 setAdministrator(){
     # $1 = administrator address
 
-    administrator_address="0x$(erdpy wallet bech32 --decode ${1})"
+    administrator_address="0x$(mxpy wallet bech32 --decode ${1})"
 
-    erdpy --verbose contract call ${ADDRESS} \
+    mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=6000000 \
@@ -110,12 +113,11 @@ setAdministrator(){
     --send || return
 }
 
-
 setDiscounts(){
     # $1 = seller discount
     # $2 = buyer discount
 
-    erdpy --verbose contract call ${ADDRESS} \
+    mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=6000000 \
@@ -130,7 +132,7 @@ setFees(){
     # $1 = seller fee    
     # $2 = buyer fee
 
-     erdpy --verbose contract call ${ADDRESS} \
+     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=6000000 \
@@ -141,14 +143,13 @@ setFees(){
     --send || return
 }
 
-
 addAcceptedToken(){
     # $1 = token identifier
 
     token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
 
 
-     erdpy --verbose contract call ${ADDRESS} \
+     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=6000000 \
@@ -167,7 +168,7 @@ addAcceptedPayment(){
 
     token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
 
-      erdpy --verbose contract call ${ADDRESS} \
+      mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=6000000 \
@@ -178,8 +179,6 @@ addAcceptedPayment(){
     --send || return
 }
 
-
-
 addOffer(){
     # $1 = token identifier
     # $2 = sft nonce
@@ -189,12 +188,12 @@ addOffer(){
     # $6 = payment token amount
     # $7 = quantity (optional)
 
-    user_address="$(erdpy wallet pem-address $SELLER)"
+    user_address="$(mxpy wallet pem-address $SELLER)"
     token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
     method="0x$(echo -n 'addOffer' | xxd -p -u | tr -d '\n')"
     payment_token_identifier="0x$(echo -n ${4} | xxd -p -u | tr -d '\n')"
 
-erdpy --verbose contract call $user_address \
+  mxpy --verbose contract call $user_address \
     --recall-nonce \
     --pem=${SELLER} \
     --gas-limit=10000000 \
@@ -205,11 +204,10 @@ erdpy --verbose contract call $user_address \
     --send || return
 }
 
-
 cancelOffer(){
     # $1 = offer id
 
-    erdpy --verbose contract call ${ADDRESS} \
+    mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${SELLER} \
     --gas-limit=6000000 \
@@ -227,7 +225,7 @@ acceptOffer(){
 
     method="0x$(echo -n 'acceptOffer' | xxd -p -u | tr -d '\n')"
 
-    erdpy --verbose contract call $ADDRESS \
+    mxpy --verbose contract call $ADDRESS \
     --recall-nonce \
     --pem=${BUYER} \
     --gas-limit=10000000 \
