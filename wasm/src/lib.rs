@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           32
+// Endpoints:                           36
 // Async Callback (empty):               1
-// Total number of exported functions:  34
+// Total number of exported functions:  38
 
 #![no_std]
 #![feature(alloc_error_handler, lang_items)]
@@ -21,6 +21,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         initializeContract
         setDiscounts
         setFees
+        setClaimsContract
+        setRoyaltiesClaimToken
         addAcceptedToken
         addAcceptedPayment
         setIsPaused
@@ -42,6 +44,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         getHighestOfferIndex
         getIsPaused
         getTreasuryAddress
+        getClaimsAddress
+        getRoyaltiesClaimToken
         getAdministrator
         getRequirements
         viewPagedOffers

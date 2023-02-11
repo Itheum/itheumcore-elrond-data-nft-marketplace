@@ -43,6 +43,7 @@ where
     pub second_user_address: Address,
     pub third_user_address: Address,
     pub treasury_address: Address,
+    pub claims_address: Address,
 }
 
 fn setup_contract<ContractObjBuilder>(
@@ -68,6 +69,8 @@ where
     );
     let third_user_address =
         blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE / 100u128));
+    let claims_address =
+        blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE / 50u128));
 
     blockchain_wrapper.set_esdt_balance(&third_user_address, TOKEN_ID, &rust_biguint!(10_000));
     blockchain_wrapper.set_esdt_balance(&owner_address, TOKEN_ID, &rust_biguint!(5_000_000));
@@ -143,6 +146,7 @@ where
         first_user_address,
         second_user_address,
         treasury_address,
+        claims_address,
         third_user_address,
         contract_wrapper: cf_wrapper,
     }
@@ -438,6 +442,28 @@ fn requirements_test() {
             &rust_biguint!(0u64),
             |sc| {
                 sc.set_fees(managed_biguint!(10u64), managed_biguint!(20u64));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            &administrator_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_discounts(managed_biguint!(11u64), managed_biguint!(22u64));
+            },
+        )
+        .assert_user_error("Discounts cannot be higher than the fee percentage cuts");
+
+    b_wrapper
+        .execute_tx(
+            &administrator_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_discounts(managed_biguint!(10u64), managed_biguint!(20u64));
             },
         )
         .assert_ok();
@@ -1605,6 +1631,7 @@ fn accept_offer_test() {
     let first_user_address = &setup.first_user_address;
     let second_user_address = &setup.second_user_address;
     let third_user_address = &setup.third_user_address;
+    let claims_address = &setup.claims_address;
 
     // Test add_accepted_payment function
     b_wrapper
@@ -1629,6 +1656,28 @@ fn accept_offer_test() {
             &rust_biguint!(0u64),
             |sc| {
                 sc.add_accepted_token(managed_token_id!(SFT_TICKER));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_royalties_claims_token(managed_token_id!(TOKEN_ID));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_claims_contract(managed_address!(claims_address));
             },
         )
         .assert_ok();
@@ -1872,7 +1921,10 @@ fn accept_offer_test() {
     assert_eq!(treasury_address_balance, rust_biguint!(44u64)); // 2% from buyer , 2 % from seller  total: 40 tokens
 
     let second_user_balance = b_wrapper.get_esdt_balance(second_user_address, TOKEN_ID, 0u64);
-    assert_eq!(second_user_balance, rust_biguint!(10_147)); // 49 tokens royalties    5%
+    assert_eq!(second_user_balance, rust_biguint!(10_098));
+
+    let claims_contract_balance = b_wrapper.get_esdt_balance(claims_address, TOKEN_ID, 0u64);
+    assert_eq!(claims_contract_balance, rust_biguint!(49u64)); // 49 tokens royalties    5%
 
     let first_user_balance = b_wrapper.get_esdt_balance(first_user_address, TOKEN_ID, 0u64);
     assert_eq!(first_user_balance, rust_biguint!(10_829)); // 9_898 initial balance + 931 (1_000 - 49 - 20) sale price after taxes
@@ -2094,6 +2146,7 @@ fn accept_offer_test() {
         }),
     );
 }
+// [TO DO] Add test to accept offer with non accepted royalties token identifier
 
 // [TO DO] Add test for views
 #[test]

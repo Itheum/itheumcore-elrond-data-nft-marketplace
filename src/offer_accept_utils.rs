@@ -1,10 +1,16 @@
-use crate::storage::OfferType;
+use crate::{
+    claims::{self, ClaimType},
+    storage::OfferType,
+};
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 #[multiversx_sc::module]
 pub trait OfferAcceptUtils: crate::storage::StorageModule {
+    #[proxy]
+    fn claims_proxy(&self, sc_address: ManagedAddress) -> claims::Proxy<Self::Api>;
+
     fn check_offer_type(&self, amount: &BigUint) -> OfferType {
         if amount == &BigUint::zero() {
             OfferType::FreeOffer
@@ -101,19 +107,32 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         creator_royalties: BigUint,
     ) {
         // If the creator setup royalties and is not the offer owner he can benefit the royalties
-        if creator_royalties > BigUint::zero() && creator != seller {
-            self.send().direct(
-                &creator,
-                &payment_token.token_identifier,
-                payment_token.token_nonce,
-                &creator_royalties,
-            );
+        if &creator_royalties > &BigUint::zero() && creator != seller {
             self.send().direct(
                 &seller,
                 &payment_token.token_identifier,
                 payment_token.token_nonce,
                 &(&buyer_payment - &creator_royalties - &fee_from_seller - &fee_from_buyer),
             );
+            if &payment_token.token_identifier.clone().unwrap_esdt()
+                != &self.royalties_claim_token().get()
+            {
+                self.send().direct(
+                    &creator,
+                    &payment_token.token_identifier,
+                    payment_token.token_nonce,
+                    &creator_royalties,
+                );
+            } else {
+                self.claims_proxy(self.claims_address().get())
+                    .add_claim(&creator, ClaimType::Royalties)
+                    .with_esdt_transfer(EsdtTokenPayment::new(
+                        payment_token.token_identifier.clone().unwrap_esdt(),
+                        payment_token.token_nonce,
+                        creator_royalties,
+                    ))
+                    .transfer_execute();
+            }
         } else {
             self.send().direct(
                 &seller,
