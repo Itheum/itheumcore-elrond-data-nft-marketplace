@@ -1,3 +1,5 @@
+use multiversx_sc::api::ManagedTypeApiImpl;
+
 use crate::{
     claims::{self, ClaimType},
     storage::OfferType,
@@ -114,9 +116,9 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                 payment_token.token_nonce,
                 &(&buyer_payment - &creator_royalties - &fee_from_seller - &fee_from_buyer),
             );
-            if &payment_token.token_identifier.clone().unwrap_esdt()
-                != &self.royalties_claim_token().get()
-            {
+            let payment_token_id = payment_token.token_identifier.clone().unwrap_esdt();
+
+            if &payment_token_id != &self.royalties_claim_token().get() {
                 self.send().direct(
                     &creator,
                     &payment_token.token_identifier,
@@ -127,7 +129,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                 self.claims_proxy(self.claims_address().get())
                     .add_claim(&creator, ClaimType::Royalties)
                     .with_esdt_transfer(EsdtTokenPayment::new(
-                        payment_token.token_identifier.clone().unwrap_esdt(),
+                        payment_token_id,
                         payment_token.token_nonce,
                         creator_royalties,
                     ))

@@ -90,6 +90,38 @@ Call structure: "setAdministrator" + "@" + administrator hex encoded.
 
 Example: "setAdministrator@afb9aa109340a83cdb2129635b060a3a2d67ba2659ad86bf6ef49f948c43572c"
 
+#### setClaimsContract
+
+```rust
+    #[only_owner]
+    #[endpoint(setClaimsContract)]
+    fn set_claims_contract(&self,
+        claims_contract: ManagedAddress
+    );
+```
+
+Endpoint that sets the claims contract address. The claims contract is used to let the user claim their royalties.
+
+Call structure: "setClaimsContract" + "@" + claims_contract hex encoded.
+
+Example: "setClaimsContract@afb9aa109340a83cdb2129635b060a3a2d67ba2659ad86bf6ef49f948c43572c"
+
+#### setRoyaltiesClaimToken
+
+```rust
+    #[only_owner]
+    #[endpoint(setRoyaltiesClaimToken)]
+    fn set_royalties_claims_token(&self,
+        royalties_claims_token: TokenIdentifier
+    );
+```
+
+Endpoint that sets the royalties claim token. When trading with this token the royalties are sent to the claims contract address for royalties to be claimed.
+
+Call structure: "setRoyaltiesClaimToken" + "@" + royalties_claims_token hex encoded.
+
+Example: "setRoyaltiesClaimToken@444154414e46542d613631333137"
+
 ### Owner and administrator endpoints
 
 #### setDiscounts
@@ -217,7 +249,6 @@ Call structure: "changeOfferPrice" + "@" + index hex encoded + "@" + new_fee hex
 
 Example: "changeOfferPrice@00@91b77e5e5d9a0000"
 
-
 #### cancelOffer
 
 ```rust
@@ -226,7 +257,7 @@ Example: "changeOfferPrice@00@91b77e5e5d9a0000"
     index: u64,
     quantity: BigUint,
     );
-````
+```
 
 Endpoint that lets the seller cancel their offers. The seller can cancel only their offers. The owner and administrator can cancel any offer. It takes the offer index and the quantity that needs to be cancelled. The quantity is the same as in the addOffer endpoint.
 
@@ -298,7 +329,7 @@ cargo clean
 cargo build
 ```
 
-- The above should all work without any errors, next you can successfully run the following command to build via mxpy: `mxpy contract build` 
+- The above should all work without any errors, next you can successfully run the following command to build via mxpy: `mxpy contract build`
 - mxpy may ask you to install `nodejs` and `wasm-opt` to optimize the build, if so then follow instructions given by mxpy and do this
 - You can now run the tests. See "How to test" section below
 - You can now update code as needed
