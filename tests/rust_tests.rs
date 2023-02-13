@@ -476,6 +476,17 @@ fn requirements_test() {
 
     b_wrapper
         .execute_tx(
+            &administrator_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_fees(managed_biguint!(6u64), managed_biguint!(2u64));
+            },
+        )
+        .assert_user_error("Fees cannot be lower than the discount percentage cuts");
+
+    b_wrapper
+        .execute_tx(
             &second_user_address,
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
