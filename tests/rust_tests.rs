@@ -93,6 +93,12 @@ where
         &rust_biguint!(10_000),
     );
 
+    blockchain_wrapper.set_esdt_balance(
+        &third_user_address,
+        ANOTHER_TOKEN_ID,
+        &rust_biguint!(10_000),
+    );
+
     let _ = DebugApi::dummy();
 
     blockchain_wrapper.set_nft_balance(
@@ -2147,6 +2153,235 @@ fn accept_offer_test() {
     );
 }
 // [TO DO] Add test to accept offer with non accepted royalties token identifier
+#[test]
+fn accept_offer_non_accepted_royalties_token_id_test() {
+    let mut setup = setup_contract(data_market::contract_obj);
+    let b_wrapper = &mut setup.blockchain_wrapper;
+    let owner_address = &setup.owner_address;
+    let treasury_address = &setup.treasury_address;
+    let first_user_address = &setup.first_user_address;
+    let second_user_address = &setup.second_user_address;
+    let third_user_address = &setup.third_user_address;
+    let claims_address = &setup.claims_address;
+
+    b_wrapper
+        .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_is_paused(true);
+            },
+        )
+        .assert_ok();
+
+    // Test add_accepted_payment function
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.add_accepted_payment(
+                    managed_token_id_wrapped!(ANOTHER_TOKEN_ID),
+                    managed_biguint!(10_000),
+                );
+            },
+        )
+        .assert_ok();
+
+    // Test add_accepted_token function
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.add_accepted_token(managed_token_id!(SFT_TICKER));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_treasury_address(managed_address!(treasury_address));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_is_paused(false);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_royalties_claims_token(managed_token_id!(TOKEN_ID));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_claims_contract(managed_address!(claims_address));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            second_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(1u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(200u64),
+                    OptionalValue::Some(managed_biguint!(1u64)),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            TOKEN_ID,
+            0,
+            &(&rust_biguint!(200u64)
+                + ((&rust_biguint!(200u64) * rust_biguint!(200u64)) / rust_biguint!(10000u64))),
+            |sc| {
+                sc.accept_offer(0u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper.check_nft_balance(
+        &first_user_address,
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(1u64),
+        Option::Some(&DataNftAttributes::<DebugApi> {
+            data_preview_url: managed_buffer!(DATA_PREVIEW),
+            data_stream_url: managed_buffer!(DATA_STREAM),
+            data_marshal_url: managed_buffer!(DATA_MARSHAL),
+            creator: managed_address!(&second_user_address),
+            creation_time: 100u64,
+            title: managed_buffer!(SFT_NAME),
+            description: managed_buffer!(SFT_NAME),
+        }),
+    );
+
+    let treasury_address_balance = b_wrapper.get_esdt_balance(treasury_address, TOKEN_ID, 0u64);
+    assert_eq!(treasury_address_balance, rust_biguint!(8u64));
+
+    let first_user_balance = b_wrapper.get_esdt_balance(first_user_address, TOKEN_ID, 0u64);
+    assert_eq!(first_user_balance, rust_biguint!(9_796));
+
+    let second_user_balance = b_wrapper.get_esdt_balance(second_user_address, TOKEN_ID, 0u64);
+    assert_eq!(second_user_balance, rust_biguint!(10_196));
+
+    let claims_contract_balance = b_wrapper.get_esdt_balance(claims_address, TOKEN_ID, 0u64);
+    assert_eq!(claims_contract_balance, rust_biguint!(0u64));
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(1u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(ANOTHER_TOKEN_ID),
+                    0u64,
+                    managed_biguint!(200u64),
+                    OptionalValue::Some(managed_biguint!(1u64)),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            third_user_address,
+            &setup.contract_wrapper,
+            ANOTHER_TOKEN_ID,
+            0,
+            &(&rust_biguint!(200u64)
+                + ((&rust_biguint!(200u64) * rust_biguint!(200u64)) / rust_biguint!(10000u64))),
+            |sc| {
+                sc.accept_offer(0u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper.check_nft_balance(
+        &third_user_address,
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(1u64),
+        Option::Some(&DataNftAttributes::<DebugApi> {
+            data_preview_url: managed_buffer!(DATA_PREVIEW),
+            data_stream_url: managed_buffer!(DATA_STREAM),
+            data_marshal_url: managed_buffer!(DATA_MARSHAL),
+            creator: managed_address!(&second_user_address),
+            creation_time: 100u64,
+            title: managed_buffer!(SFT_NAME),
+            description: managed_buffer!(SFT_NAME),
+        }),
+    );
+
+    let treasury_address_balance =
+        b_wrapper.get_esdt_balance(treasury_address, ANOTHER_TOKEN_ID, 0u64);
+    assert_eq!(treasury_address_balance, rust_biguint!(8u64));
+
+    let first_user_balance = b_wrapper.get_esdt_balance(first_user_address, ANOTHER_TOKEN_ID, 0u64);
+    assert_eq!(first_user_balance, rust_biguint!(10_187));
+
+    let second_user_balance =
+        b_wrapper.get_esdt_balance(second_user_address, ANOTHER_TOKEN_ID, 0u64);
+    assert_eq!(second_user_balance, rust_biguint!(10_009)); // royalties were sent directly to the creator
+
+    let claims_contract_balance = b_wrapper.get_esdt_balance(claims_address, TOKEN_ID, 0u64);
+    assert_eq!(claims_contract_balance, rust_biguint!(0u64)); // no royalties were sent to the claims contract
+}
 
 // [TO DO] Add test for views
 #[test]
