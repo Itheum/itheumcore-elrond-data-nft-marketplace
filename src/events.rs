@@ -17,6 +17,10 @@ pub trait EventsModule {
     #[event("setClaimContract")]
     fn set_claim_contract_event(&self, #[indexed] claim_contract: &ManagedAddress);
 
+    // Emitted whenever claim contract is enabled or disabled
+    #[event("setClaimIsEnabled")]
+    fn set_claim_is_enabled_event(&self, #[indexed] is_enabled: &bool);
+
     // Emitted whenever the administrator is set
     #[event("setAdministrator")]
     fn set_administrator_event(&self, #[indexed] administrator: &ManagedAddress);

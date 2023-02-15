@@ -103,6 +103,12 @@ pub trait DataMarket:
         self.royalties_claim_token().set(royalties_claims_token);
     }
 
+    #[only_owner]
+    #[endpoint(setClaimIsEnabled)]
+    fn set_claim_is_enabled(&self, is_enabled: bool) {
+        self.set_claim_is_enabled_event(&is_enabled);
+        self.claim_is_enabled().set(is_enabled);
+    }
     // Endpoint that will be used by privileged address and contract owner to add a new accepted tradable token.
     #[endpoint(addAcceptedToken)]
     fn add_accepted_token(&self, token_id: TokenIdentifier) {

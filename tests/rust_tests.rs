@@ -132,7 +132,7 @@ where
             description: managed_buffer!(SFT_NAME),
         },
         500u64,
-        Some(&treasury_address),
+        Some(&second_user_address),
         Option::None,
         Option::None,
         &[DATA_PREVIEW.to_vec()],
@@ -1836,6 +1836,9 @@ fn accept_offer_test() {
 
     // first sell no royalties
 
+    let claims_contract_balance = b_wrapper.get_esdt_balance(claims_address, TOKEN_ID, 0u64);
+    assert_eq!(claims_contract_balance, rust_biguint!(0u64));
+
     let first_user_balance = b_wrapper.get_esdt_balance(first_user_address, TOKEN_ID, 0u64);
     assert_eq!(first_user_balance, rust_biguint!(9_898)); // 10_000 initial + 98 from offer
 
@@ -1938,10 +1941,10 @@ fn accept_offer_test() {
     assert_eq!(treasury_address_balance, rust_biguint!(44u64)); // 2% from buyer , 2 % from seller  total: 40 tokens
 
     let second_user_balance = b_wrapper.get_esdt_balance(second_user_address, TOKEN_ID, 0u64);
-    assert_eq!(second_user_balance, rust_biguint!(10_098));
+    assert_eq!(second_user_balance, rust_biguint!(10_147)); // 10_098 initial balance + 49 (5 %) royalties
 
     let claims_contract_balance = b_wrapper.get_esdt_balance(claims_address, TOKEN_ID, 0u64);
-    assert_eq!(claims_contract_balance, rust_biguint!(49u64)); // 49 tokens royalties    5%
+    assert_eq!(claims_contract_balance, rust_biguint!(0u64)); // 49 tokens royalties    5%
 
     let first_user_balance = b_wrapper.get_esdt_balance(first_user_address, TOKEN_ID, 0u64);
     assert_eq!(first_user_balance, rust_biguint!(10_829)); // 9_898 initial balance + 931 (1_000 - 49 - 20) sale price after taxes
@@ -2052,6 +2055,17 @@ fn accept_offer_test() {
             description: managed_buffer!(SFT_NAME),
         }),
     );
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_claim_is_enabled(true);
+            },
+        )
+        .assert_ok();
 
     b_wrapper
         .execute_esdt_transfer(
@@ -2186,6 +2200,16 @@ fn accept_offer_non_accepted_royalties_token_id_test() {
         )
         .assert_ok();
 
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_claim_is_enabled(true); // true - but the token traded is not meant to be send to the claims contract
+            },
+        )
+        .assert_ok();
     // Test add_accepted_payment function
     b_wrapper
         .execute_tx(

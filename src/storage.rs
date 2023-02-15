@@ -111,4 +111,8 @@ pub trait StorageModule {
     #[view(getAdministrator)]
     #[storage_mapper("administrator")]
     fn administrator(&self) -> SingleValueMapper<ManagedAddress>;
+
+    #[view(getClaimIsEnabled)]
+    #[storage_mapper("claims_royalties_toggle")]
+    fn claim_is_enabled(&self) -> SingleValueMapper<bool>;
 }

@@ -109,7 +109,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         creator_royalties: BigUint,
     ) {
         // If the creator setup royalties and is not the offer owner he can benefit the royalties
-        if &creator_royalties > &BigUint::zero() && creator != seller {
+        if creator != seller && &creator_royalties > &BigUint::zero() {
             self.send().direct(
                 &seller,
                 &payment_token.token_identifier,
@@ -117,23 +117,34 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                 &(&buyer_payment - &creator_royalties - &fee_from_seller - &fee_from_buyer),
             );
             let payment_token_id = payment_token.token_identifier.clone().unwrap_esdt();
+            let claim_is_enabled = self.claim_is_enabled().get();
 
-            if &payment_token_id != &self.royalties_claim_token().get() {
-                self.send().direct(
+            match claim_is_enabled {
+                true => {
+                    if &payment_token_id != &self.royalties_claim_token().get() {
+                        self.send().direct(
+                            &creator,
+                            &payment_token.token_identifier,
+                            payment_token.token_nonce,
+                            &creator_royalties,
+                        );
+                    } else {
+                        self.claims_proxy(self.claims_address().get())
+                            .add_claim(&creator, ClaimType::Royalties)
+                            .with_esdt_transfer(EsdtTokenPayment::new(
+                                payment_token_id,
+                                payment_token.token_nonce,
+                                creator_royalties,
+                            ))
+                            .transfer_execute();
+                    }
+                }
+                false => self.send().direct(
                     &creator,
                     &payment_token.token_identifier,
                     payment_token.token_nonce,
                     &creator_royalties,
-                );
-            } else {
-                self.claims_proxy(self.claims_address().get())
-                    .add_claim(&creator, ClaimType::Royalties)
-                    .with_esdt_transfer(EsdtTokenPayment::new(
-                        payment_token_id,
-                        payment_token.token_nonce,
-                        creator_royalties,
-                    ))
-                    .transfer_execute();
+                ),
             }
         } else {
             self.send().direct(
