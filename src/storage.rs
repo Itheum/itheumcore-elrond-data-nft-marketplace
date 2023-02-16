@@ -99,8 +99,20 @@ pub trait StorageModule {
     #[storage_mapper("treasury_address")]
     fn treasury_address(&self) -> SingleValueMapper<ManagedAddress>;
 
+    #[view(getClaimsAddress)]
+    #[storage_mapper("claims_address")]
+    fn claims_address(&self) -> SingleValueMapper<ManagedAddress>;
+
+    #[view(getRoyaltiesClaimToken)]
+    #[storage_mapper("royalties_accepted_token")]
+    fn royalties_claim_token(&self) -> SingleValueMapper<TokenIdentifier>;
+
     // Stores admin address
     #[view(getAdministrator)]
     #[storage_mapper("administrator")]
     fn administrator(&self) -> SingleValueMapper<ManagedAddress>;
+
+    #[view(getClaimIsEnabled)]
+    #[storage_mapper("claims_royalties_toggle")]
+    fn claim_is_enabled(&self) -> SingleValueMapper<bool>;
 }

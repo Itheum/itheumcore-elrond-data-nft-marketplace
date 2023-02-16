@@ -6,6 +6,7 @@ multiversx_sc::derive_imports!();
 use crate::storage::DataNftAttributes;
 use crate::storage::OfferType;
 
+pub mod claims;
 pub mod events;
 pub mod offer_accept_utils;
 pub mod offer_adding_utils;
@@ -33,7 +34,7 @@ pub trait DataMarket:
         self.discount_fee_percentage_seller()
             .set(BigUint::from(0u64));
     }
-    
+
     // Endpoint that will be used by the contract owner to initialize the contract.
     #[only_owner]
     #[endpoint(initializeContract)]
@@ -63,6 +64,11 @@ pub trait DataMarket:
     fn set_discounts(&self, seller_discount: BigUint, buyer_discount: BigUint) {
         let caller = self.blockchain().get_caller();
         self.require_is_privileged(&caller);
+        require!(
+            seller_discount <= self.percentage_cut_from_seller().get()
+                && buyer_discount <= self.percentage_cut_from_buyer().get(),
+            "Discounts cannot be higher than the fee percentage cuts"
+        );
         self.set_discounts_event(&seller_discount, &buyer_discount);
         self.discount_fee_percentage_buyer().set(&buyer_discount);
         self.discount_fee_percentage_seller().set(&seller_discount);
@@ -73,11 +79,36 @@ pub trait DataMarket:
     fn set_fees(&self, seller_fee: BigUint, buyer_fee: BigUint) {
         let caller = self.blockchain().get_caller();
         self.require_is_privileged(&caller);
+        require!(
+            seller_fee >= self.discount_fee_percentage_buyer().get()
+                && buyer_fee >= self.discount_fee_percentage_seller().get(),
+            "Fees cannot be lower than the discount percentage cuts"
+        );
         self.set_percentage_cuts_event(&seller_fee, &buyer_fee);
         self.percentage_cut_from_buyer().set(&buyer_fee);
         self.percentage_cut_from_seller().set(&seller_fee);
     }
 
+    #[only_owner]
+    #[endpoint(setClaimsContract)]
+    fn set_claims_contract(&self, claims_contract: ManagedAddress) {
+        self.set_claim_contract_event(&claims_contract);
+        self.claims_address().set(claims_contract);
+    }
+
+    #[only_owner]
+    #[endpoint(setRoyaltiesClaimToken)]
+    fn set_royalties_claims_token(&self, royalties_claims_token: TokenIdentifier) {
+        self.set_royalties_claims_token_event(&royalties_claims_token);
+        self.royalties_claim_token().set(royalties_claims_token);
+    }
+
+    #[only_owner]
+    #[endpoint(setClaimIsEnabled)]
+    fn set_claim_is_enabled(&self, is_enabled: bool) {
+        self.set_claim_is_enabled_event(&is_enabled);
+        self.claim_is_enabled().set(is_enabled);
+    }
     // Endpoint that will be used by privileged address and contract owner to add a new accepted tradable token.
     #[endpoint(addAcceptedToken)]
     fn add_accepted_token(&self, token_id: TokenIdentifier) {
@@ -86,7 +117,7 @@ pub trait DataMarket:
         self.set_accepted_token_event(&token_id);
         self.accepted_tokens().insert(token_id);
     }
-    
+
     // Endpoint that will be used by privileged address and contract owner to add a new accepted payment.
     #[endpoint(addAcceptedPayment)]
     fn add_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier, maximum_fee: BigUint) {

@@ -13,9 +13,21 @@ pub trait EventsModule {
     #[event("setTreasuryAddress")]
     fn treasury_address_event(&self, #[indexed] treasury_address: &ManagedAddress);
 
+    // Emitted whenever a claim contract is set
+    #[event("setClaimContract")]
+    fn set_claim_contract_event(&self, #[indexed] claim_contract: &ManagedAddress);
+
+    // Emitted whenever claim contract is enabled or disabled
+    #[event("setClaimIsEnabled")]
+    fn set_claim_is_enabled_event(&self, #[indexed] is_enabled: &bool);
+
     // Emitted whenever the administrator is set
     #[event("setAdministrator")]
     fn set_administrator_event(&self, #[indexed] administrator: &ManagedAddress);
+
+    // Emitted whenever a accepted claim royalties token is set
+    #[event("setRoyaltiesAcceptedToken")]
+    fn set_royalties_claims_token_event(&self, #[indexed] token_identifier: &TokenIdentifier);
 
     // Emitted whenever the discounts are set
     #[event("setDiscounts")]
