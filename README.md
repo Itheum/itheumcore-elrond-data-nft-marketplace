@@ -93,7 +93,6 @@ Example: "setAdministrator@afb9aa109340a83cdb2129635b060a3a2d67ba2659ad86bf6ef49
 #### setClaimsContract
 
 ```rust
-    #[only_owner]
     #[endpoint(setClaimsContract)]
     fn set_claims_contract(&self,
         claims_contract: ManagedAddress
@@ -109,7 +108,6 @@ Example: "setClaimsContract@afb9aa109340a83cdb2129635b060a3a2d67ba2659ad86bf6ef4
 #### setRoyaltiesClaimToken
 
 ```rust
-    #[only_owner]
     #[endpoint(setRoyaltiesClaimToken)]
     fn set_royalties_claims_token(&self,
         royalties_claims_token: TokenIdentifier
@@ -121,6 +119,15 @@ Endpoint that sets the royalties claim token. When trading with this token the r
 Call structure: "setRoyaltiesClaimToken" + "@" + royalties_claims_token hex encoded.
 
 Example: "setRoyaltiesClaimToken@444154414e46542d613631333137"
+
+```rust
+    #[endpoint(setClaimIsEnabled)]
+    fn set_claim_is_enabled(&self,
+        is_enabled: bool
+    );
+```
+
+Endpoint that enables or disables the royalties to be claimed. When disabled the royalties are sent directly to the creator.
 
 ### Owner and administrator endpoints
 

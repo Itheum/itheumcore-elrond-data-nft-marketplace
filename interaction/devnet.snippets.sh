@@ -179,6 +179,67 @@ addAcceptedPayment(){
     --send || return
 }
 
+
+setClaimsContract(){
+    # $1 = claims contract address
+
+    claims_address="0x$(mxpy wallet bech32 --decode ${1})"
+
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setClaimsContract" \
+    --arguments $claims_address \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+
+}
+
+setRoyaltiesClaimToken(){
+    # $1 = token identifier
+
+    token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
+
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setRoyaltiesClaimToken" \
+    --arguments $token_identifier \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+
+
+}
+
+setClaimIsEnabled(){
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setClaimIsEnabled" \
+    --arguments 1 \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+}
+
+setClaimIsDisabled(){
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setClaimIsEnabled" \
+    --arguments 0 \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+}
+
+
 addOffer(){
     # $1 = token identifier
     # $2 = sft nonce
