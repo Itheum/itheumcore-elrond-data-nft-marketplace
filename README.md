@@ -120,6 +120,8 @@ Call structure: "setRoyaltiesClaimToken" + "@" + royalties_claims_token hex enco
 
 Example: "setRoyaltiesClaimToken@444154414e46542d613631333137"
 
+#### setClaimIsEnabled
+
 ```rust
     #[endpoint(setClaimIsEnabled)]
     fn set_claim_is_enabled(&self,
@@ -324,7 +326,7 @@ This smart contract aims to offer the Elrond community an audited NFT marketplac
 
 ### Setting up dev environment (project development bootstrap)
 
-- Uses `multiversx-sc-* 0.39.4` SDK libs (see Cargo.toml)
+- Uses `multiversx-sc-* 0.39.5` SDK libs (see Cargo.toml)
 - Building requires minimum **mxpy 5.2.3** (newer version should also work but devs used 5.2.3). Check version using `mxpy --version`
 - To build the project, requires minimum Rust version `1.68.0-nightly`. Check your Rust version by running `rustc --version`. To update your Rust, run `rustup update`. To set to nightly run `rustup default nightly` (devs used 1.69.0-nightly)
 - After you make sure you have the minimum Rust version you can then begin development. After you clone repo and before you run build, deploy or run the tests - follow these steps

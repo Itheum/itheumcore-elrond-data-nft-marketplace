@@ -1,5 +1,3 @@
-use multiversx_sc::api::ManagedTypeApiImpl;
-
 use crate::{
     claims::{self, ClaimType},
     storage::OfferType,
@@ -130,7 +128,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                         );
                     } else {
                         self.claims_proxy(self.claims_address().get())
-                            .add_claim(&creator, ClaimType::Royalties)
+                            .add_claim(&creator, ClaimType::Royalty)
                             .with_esdt_transfer(EsdtTokenPayment::new(
                                 payment_token_id,
                                 payment_token.token_nonce,

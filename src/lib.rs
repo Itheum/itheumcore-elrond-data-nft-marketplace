@@ -80,8 +80,8 @@ pub trait DataMarket:
         let caller = self.blockchain().get_caller();
         self.require_is_privileged(&caller);
         require!(
-            seller_fee >= self.discount_fee_percentage_buyer().get()
-                && buyer_fee >= self.discount_fee_percentage_seller().get(),
+            seller_fee >= self.discount_fee_percentage_seller().get()
+                && buyer_fee >= self.discount_fee_percentage_buyer().get(),
             "Fees cannot be lower than the discount percentage cuts"
         );
         self.set_percentage_cuts_event(&seller_fee, &buyer_fee);

@@ -6,7 +6,7 @@ pub enum ClaimType {
     Reward,
     Airdrop,
     Allocation,
-    Royalties,
+    Royalty,
 }
 
 #[multiversx_sc::proxy]
