@@ -3052,7 +3052,7 @@ fn change_offer_price_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(0u64, managed_biguint!(20_000));
+                sc.change_offer_price(0u64, managed_biguint!(21_000)); // max 20_000 (10_000 per 1 data NFT-FT)
             },
         )
         .assert_user_error("Payment fee too high");
@@ -3217,7 +3217,7 @@ fn accept_free_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(0u64, managed_biguint!(20_000));
+                sc.change_offer_price(0u64, managed_biguint!(21_000));
             },
         )
         .assert_user_error("Payment fee too high");

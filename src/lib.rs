@@ -160,17 +160,6 @@ pub trait DataMarket:
             "Token not accepted"
         );
 
-        let maximum_fee = self.accepted_payments().get(&payment_token_id);
-        match maximum_fee {
-            Some(maximum_fee) => {
-                require!(payment_token_fee <= maximum_fee, "Payment fee too high");
-            }
-            None => sc_panic!("Token not accepted"),
-        }
-
-        let payment_token =
-            EgldOrEsdtTokenPayment::new(payment_token_id, payment_token_nonce, payment_token_fee);
-
         let existing_quantity = opt_quantity.into_option().unwrap_or(BigUint::from(1u64));
 
         require!(existing_quantity > 0, "Quantity must be greater than 0");
@@ -178,6 +167,20 @@ pub trait DataMarket:
             data_nft.amount >= existing_quantity,
             "Quantity must be less than offered token amount"
         );
+
+        let maximum_fee = self.accepted_payments().get(&payment_token_id);
+        match maximum_fee {
+            Some(maximum_fee) => {
+                require!(
+                    payment_token_fee <= &maximum_fee * &existing_quantity,
+                    "Payment fee too high"
+                );
+            }
+            None => sc_panic!("Token not accepted"),
+        }
+
+        let payment_token =
+            EgldOrEsdtTokenPayment::new(payment_token_id, payment_token_nonce, payment_token_fee);
 
         require!(
             &data_nft.amount % &existing_quantity == 0,
@@ -213,7 +216,10 @@ pub trait DataMarket:
                 let maximum_fee = self.accepted_payments().get(&token_identifier);
                 match maximum_fee {
                     Some(maximum_fee) => {
-                        require!(new_fee <= maximum_fee, "Payment fee too high");
+                        require!(
+                            new_fee <= maximum_fee * &offer.quantity,
+                            "Payment fee too high"
+                        );
                     }
                     None => sc_panic!("Token not accepted"),
                 }
