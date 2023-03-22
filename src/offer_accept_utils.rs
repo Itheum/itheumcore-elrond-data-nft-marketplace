@@ -114,6 +114,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                 payment_token.token_nonce,
                 &(&buyer_payment - &creator_royalties - &fee_from_seller - &fee_from_buyer),
             );
+
             let payment_token_id = payment_token.token_identifier.clone().unwrap_esdt();
             let claim_is_enabled = self.claim_is_enabled().get();
 
