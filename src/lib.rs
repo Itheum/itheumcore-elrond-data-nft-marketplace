@@ -28,12 +28,16 @@ pub trait DataMarket:
     fn init(&self) {
         self.is_paused().set(true);
         self.pause_toggle_event(&true);
-        self.percentage_cut_from_buyer().set(BigUint::from(200u64));
-        self.percentage_cut_from_seller().set(BigUint::from(200u64));
+        self.set_percentage_cuts_event(&BigUint::from(200u64), &BigUint::from(200u64));
+        self.percentage_cut_from_buyer()
+            .set_if_empty(BigUint::from(200u64));
+        self.percentage_cut_from_seller()
+            .set_if_empty(BigUint::from(200u64));
+        self.set_discounts_event(&BigUint::zero(), &BigUint::zero());
         self.discount_fee_percentage_buyer()
-            .set(BigUint::from(0u64));
+            .set_if_empty(BigUint::zero());
         self.discount_fee_percentage_seller()
-            .set(BigUint::from(0u64));
+            .set_if_empty(BigUint::zero());
     }
 
     // Endpoint that will be used by the contract owner to initialize the contract.

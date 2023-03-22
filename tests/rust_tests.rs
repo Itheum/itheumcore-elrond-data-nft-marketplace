@@ -195,6 +195,44 @@ fn deploy_test() {
             assert_eq!(sc.is_paused().get(), true);
         })
         .assert_ok();
+
+    setup
+        .blockchain_wrapper
+        .execute_tx(
+            &setup.owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_fees(managed_biguint!(100u64), managed_biguint!(100u64));
+                sc.set_discounts(managed_biguint!(50u64), managed_biguint!(50u64));
+                sc.set_is_paused(false);
+                sc.init();
+            },
+        )
+        .assert_ok();
+
+    setup
+        .blockchain_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.percentage_cut_from_seller().get(),
+                managed_biguint!(100u64)
+            );
+            assert_eq!(
+                sc.percentage_cut_from_buyer().get(),
+                managed_biguint!(100u64)
+            );
+            assert_eq!(
+                sc.discount_fee_percentage_buyer().get(),
+                managed_biguint!(50u64)
+            );
+            assert_eq!(
+                sc.discount_fee_percentage_seller().get(),
+                managed_biguint!(50u64)
+            );
+            assert_eq!(sc.is_paused().get(), true);
+        })
+        .assert_ok();
 }
 
 #[test] //Tests owner setting a new admin
