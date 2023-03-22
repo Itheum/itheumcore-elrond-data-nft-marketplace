@@ -4,6 +4,7 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use crate::storage::DataNftAttributes;
+use crate::storage::Offer;
 use crate::storage::OfferType;
 
 pub mod claims;
@@ -149,7 +150,7 @@ pub trait DataMarket:
         self.require_sc_ready_to_trade();
         let caller = self.blockchain().get_caller();
 
-        let data_nft = self.call_value().single_esdt();
+        let mut data_nft = self.call_value().single_esdt();
         require!(
             self.accepted_payments().contains_key(&payment_token_id),
             "Token not accepted"
@@ -170,7 +171,31 @@ pub trait DataMarket:
         let payment_token =
             EgldOrEsdtTokenPayment::new(payment_token_id, payment_token_nonce, payment_token_fee);
 
-        self.create_offer(caller, data_nft, payment_token, opt_quantity);
+        let existing_quantity = opt_quantity.into_option().unwrap_or(BigUint::from(1u64));
+
+        require!(existing_quantity > 0, "Quantity must be greater than 0");
+        require!(
+            data_nft.amount >= existing_quantity,
+            "Quantity must be less than offered token amount"
+        );
+
+        require!(
+            &data_nft.amount % &existing_quantity == 0,
+            "Quantity must be a divisor of offered token amount"
+        );
+        data_nft.amount = &data_nft.amount / &existing_quantity;
+
+        let index = self.create_offer_index();
+        self.user_listed_offers(&caller).insert(index);
+
+        let offer = Offer {
+            owner: caller,
+            offered_token: data_nft,
+            wanted_token: payment_token,
+            quantity: existing_quantity,
+        };
+        self.added_offer_event(&index, &offer);
+        self.offers().insert(index, offer);
     }
 
     #[endpoint(changeOfferPrice)]
