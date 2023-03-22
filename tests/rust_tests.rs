@@ -1,5 +1,6 @@
 use std::u8;
 
+use data_market::requirements::RequirementsModule;
 use data_market::storage::*;
 
 use data_market::offer_adding_utils::OfferAddingUtils;
@@ -8,6 +9,7 @@ use data_market::DataMarket;
 
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
+use multiversx_sc::storage::mappers::StorageClearable;
 use multiversx_sc::types::{
     Address, EgldOrEsdtTokenPayment, EsdtLocalRole, EsdtTokenPayment, ManagedVec, MultiValueEncoded,
 };
@@ -430,8 +432,57 @@ fn requirements_test() {
             &rust_biguint!(0u64),
             |sc| {
                 sc.set_administrator(managed_address!(administrator_address));
+                sc.accepted_payments().insert(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(20_000),
+                );
+                sc.accepted_tokens().insert(managed_token_id!(TOKEN_ID));
+                sc.treasury_address()
+                    .set(managed_address!(treasury_address));
+                sc.claim_is_enabled().set(true);
+                sc.set_is_paused(false);
             },
         )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            sc.require_sc_ready_to_trade();
+        })
+        .assert_user_error("Marketplace trade is not ready");
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.claims_address().set(managed_address!(treasury_address));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            sc.require_sc_ready_to_trade();
+        })
+        .assert_user_error("Marketplace trade is not ready");
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.royalties_claim_token().set(managed_token_id!(TOKEN_ID));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            sc.require_sc_ready_to_trade();
+        })
         .assert_ok();
 
     b_wrapper
@@ -441,6 +492,10 @@ fn requirements_test() {
             &rust_biguint!(0u64),
             |sc| {
                 sc.set_is_paused(false);
+                sc.claim_is_enabled().set(false);
+                sc.treasury_address().clear();
+                sc.accepted_payments().clear();
+                sc.accepted_tokens().clear();
             },
         )
         .assert_ok();

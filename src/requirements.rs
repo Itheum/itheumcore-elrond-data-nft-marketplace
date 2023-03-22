@@ -30,6 +30,14 @@ pub trait RequirementsModule: crate::storage::StorageModule {
         if self.accepted_tokens().is_empty() {
             is_ready = false;
         }
+        if self.claim_is_enabled().get() {
+            if self.claims_address().is_empty() {
+                is_ready = false;
+            }
+            if self.royalties_claim_token().is_empty() {
+                is_ready = false;
+            }
+        }
         if self.is_paused().get() {
             is_ready = false;
         }

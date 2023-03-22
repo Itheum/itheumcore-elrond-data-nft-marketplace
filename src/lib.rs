@@ -27,6 +27,7 @@ pub trait DataMarket:
     #[init]
     fn init(&self) {
         self.is_paused().set(true);
+
         self.pause_toggle_event(&true);
         self.set_percentage_cuts_event(&BigUint::from(200u64), &BigUint::from(200u64));
         self.percentage_cut_from_buyer()
