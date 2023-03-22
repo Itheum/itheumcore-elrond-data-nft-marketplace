@@ -58,11 +58,9 @@ where
     let mut blockchain_wrapper = BlockchainStateWrapper::new();
     let first_user_address =
         blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE / 100u128));
-    let second_user_address =
-        blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE / 100u128));
+    let second_user_address = blockchain_wrapper.create_user_account(&rust_biguint!(100));
     let owner_address = blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE));
-    let treasury_address =
-        blockchain_wrapper.create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE / 10u128));
+    let treasury_address = blockchain_wrapper.create_user_account(&rust_biguint!(0));
     let cf_wrapper = blockchain_wrapper.create_sc_account(
         &rust_zero,
         Some(&owner_address),
@@ -3580,10 +3578,9 @@ fn accept_offer_with_egld() {
         )
         .assert_ok();
 
-    let treasury_address_balance = b_wrapper.get_esdt_balance(treasury_address, TOKEN_ID, 0u64);
-    assert_eq!(treasury_address_balance, rust_biguint!(0)); // no fee was paid
+    let treasury_address_balance = b_wrapper.get_egld_balance(treasury_address);
+    assert_eq!(treasury_address_balance, rust_biguint!(4)); // 2% from seller + 2 % from buyer
 
-    let second_user_address_balance =
-        b_wrapper.get_esdt_balance(second_user_address, TOKEN_ID, 0u64);
-    assert_eq!(second_user_address_balance, rust_biguint!(10_000)); // 10_000 initial balance of the seller
+    let second_user_address_balance = b_wrapper.get_egld_balance(second_user_address);
+    assert_eq!(second_user_address_balance, rust_biguint!(198)); // 100 initial balance of the seller + 98 from the trade
 }
