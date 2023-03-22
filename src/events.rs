@@ -49,12 +49,23 @@ pub trait EventsModule {
     #[event("setAcceptedToken")]
     fn set_accepted_token_event(&self, #[indexed] token_identifier: &TokenIdentifier);
 
+    // Emitted whenever a accepted token is removed
+    #[event("removeAcceptedToken")]
+    fn remove_accepted_token_event(&self, #[indexed] token_identifier: &TokenIdentifier);
+
     // Emitted whenever a new accepted payment token is set
     #[event("setAcceptedPaymentToken")]
     fn set_accepted_payment_event(
         &self,
         #[indexed] token_identifier: &EgldOrEsdtTokenIdentifier,
         #[indexed] max_payment_fee: &BigUint,
+    );
+
+    // Emitted whenever an accepted payment token is removed
+    #[event("removeAcceptedPaymentToken")]
+    fn remove_accepted_payment_event(
+        &self,
+        #[indexed] token_identifier: &EgldOrEsdtTokenIdentifier,
     );
 
     // Emitted whenever a new offer is created

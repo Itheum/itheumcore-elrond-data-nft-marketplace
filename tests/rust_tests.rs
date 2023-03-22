@@ -432,15 +432,47 @@ fn requirements_test() {
             &rust_biguint!(0u64),
             |sc| {
                 sc.set_administrator(managed_address!(administrator_address));
-                sc.accepted_payments().insert(
-                    managed_token_id_wrapped!(TOKEN_ID),
-                    managed_biguint!(20_000),
-                );
-                sc.accepted_tokens().insert(managed_token_id!(TOKEN_ID));
                 sc.treasury_address()
                     .set(managed_address!(treasury_address));
                 sc.claim_is_enabled().set(true);
                 sc.set_is_paused(false);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            sc.require_sc_ready_to_trade();
+        })
+        .assert_user_error("Marketplace trade is not ready");
+
+    b_wrapper
+        .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.accepted_payments().insert(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    managed_biguint!(20_000),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            sc.require_sc_ready_to_trade();
+        })
+        .assert_user_error("Marketplace trade is not ready");
+
+    b_wrapper
+        .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.accepted_tokens().insert(managed_token_id!(TOKEN_ID));
             },
         )
         .assert_ok();
@@ -952,6 +984,38 @@ fn value_setters_test() {
         })
         .assert_ok();
 
+    b_wrapper
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.remove_accepted_token(managed_token_id!(SFT_TICKER));
+            },
+        )
+        .assert_user_error("Address is not privileged");
+
+    b_wrapper
+        .execute_tx(
+            administrator_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.remove_accepted_token(managed_token_id!(SFT_TICKER));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.accepted_tokens()
+                    .contains(&managed_token_id!(SFT_TICKER)),
+                false
+            );
+        })
+        .assert_ok();
+
     // Test add_accepted_payment function
     b_wrapper
         .execute_tx(
@@ -997,6 +1061,38 @@ fn value_setters_test() {
                 sc.accepted_payments()
                     .contains_key(&managed_token_id_wrapped!(TOKEN_ID)),
                 true
+            );
+        })
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.remove_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+            },
+        )
+        .assert_user_error("Address is not privileged");
+
+    b_wrapper
+        .execute_tx(
+            administrator_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.remove_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.accepted_payments()
+                    .contains_key(&managed_token_id_wrapped!(TOKEN_ID)),
+                false
             );
         })
         .assert_ok();

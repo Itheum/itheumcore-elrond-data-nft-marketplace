@@ -1,5 +1,3 @@
-use multiversx_sc::api::ManagedTypeApiImpl;
-
 use crate::{
     claims::{self, ClaimType},
     storage::OfferType,

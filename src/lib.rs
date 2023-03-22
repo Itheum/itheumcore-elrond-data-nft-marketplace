@@ -124,6 +124,15 @@ pub trait DataMarket:
         self.accepted_tokens().insert(token_id);
     }
 
+    // Endpoint that will be used by privileged address and contract owner to remove an accepted tradable token.
+    #[endpoint(removeAcceptedToken)]
+    fn remove_accepted_token(&self, token_id: TokenIdentifier) {
+        let caller = self.blockchain().get_caller();
+        self.require_is_privileged(&caller);
+        self.remove_accepted_token_event(&token_id);
+        self.accepted_tokens().remove(&token_id);
+    }
+
     // Endpoint that will be used by privileged address and contract owner to add a new accepted payment.
     #[endpoint(addAcceptedPayment)]
     fn add_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier, maximum_fee: BigUint) {
@@ -131,6 +140,15 @@ pub trait DataMarket:
         self.require_is_privileged(&caller);
         self.set_accepted_payment_event(&token_id, &maximum_fee);
         self.accepted_payments().insert(token_id, maximum_fee);
+    }
+
+    // Endpoint that will be used by privileged address and contract owner to remove an accepted payment.
+    #[endpoint(removeAcceptedPayment)]
+    fn remove_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier) {
+        let caller = self.blockchain().get_caller();
+        self.require_is_privileged(&caller);
+        self.accepted_payments().remove(&token_id);
+        self.remove_accepted_payment_event(&token_id);
     }
 
     // Endpoint that will be used by privileged address to change the contract pause value.
