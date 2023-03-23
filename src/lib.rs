@@ -298,6 +298,7 @@ pub trait DataMarket:
                     // doesn't take into account the quantity provided
                     self.cancelled_offers(offer_id).set(offer);
                     self.offers().remove(&offer_id);
+                    self.cancelled_offer_event(&offer_id);
                 }
             }
             None => sc_panic!("Offer not found"),
@@ -318,7 +319,8 @@ pub trait DataMarket:
             &(&offer.offered_token.amount * &offer.quantity),
         );
 
-        self.user_listed_offers(&offer.owner).swap_remove(&offer_id); // after whitdraw, offer is no longer managed by the contract
+        self.user_listed_offers(&offer.owner).swap_remove(&offer_id); // after whithdraw, offer is no longer managed by the contract
+        self.withdraw_cancelled_offer_event(&offer_id);
         self.cancelled_offers(offer_id).clear();
     }
 

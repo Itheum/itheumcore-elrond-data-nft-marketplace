@@ -80,6 +80,10 @@ pub trait EventsModule {
     #[event("cancelledOffer")]
     fn cancelled_offer_event(&self, #[indexed] index: &u64);
 
+    // Emitted whenever a cancelled offer withdrawn the tokens
+    #[event("withdrawCancelledOffer")]
+    fn withdraw_cancelled_offer_event(&self, #[indexed] index: &u64);
+
     // Emitted whenever an offer is accepted
     #[event("acceptedOffer")]
     fn accepted_offer_event(
