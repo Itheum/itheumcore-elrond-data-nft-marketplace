@@ -190,24 +190,18 @@ pub trait DataMarket:
             "Quantity must be less than offered token amount"
         );
 
-        //[TO DO] Remove match case
-        let maximum_fee = self.accepted_payments().get(&payment_token_id); // [TO DO] this can be safely unwrapped as check is done above
-        match maximum_fee {
-            // Unnecessary match case
-            Some(maximum_fee) => {
-                require!(
-                    payment_token_fee <= &maximum_fee * &existing_quantity,
-                    "Payment fee too high"
-                );
-            }
-            None => sc_panic!("Token not accepted"),
-        }
+        let maximum_fee = self.accepted_payments().get(&payment_token_id).unwrap();
 
         require!(
             &data_nft.amount % &existing_quantity == 0,
             "Quantity must be a divisor of offered token amount"
         );
         data_nft.amount = &data_nft.amount / &existing_quantity;
+
+        require!(
+            payment_token_fee <= &maximum_fee * &data_nft.amount,
+            "Payment fee too high"
+        );
 
         require!(
             min_amount_for_seller <= &payment_token_fee * &data_nft.amount,
@@ -249,7 +243,7 @@ pub trait DataMarket:
                 match maximum_fee {
                     Some(maximum_fee) => {
                         require!(
-                            new_fee <= maximum_fee * &offer.quantity,
+                            new_fee <= maximum_fee * &offer.offered_token.amount,
                             "Payment fee too high"
                         );
                     }

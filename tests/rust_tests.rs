@@ -3287,7 +3287,7 @@ fn change_offer_price_test() {
             &rust_biguint!(0u64),
             |sc| {
                 sc.change_offer_price(1u64, managed_biguint!(21_000), managed_biguint!(0));
-                // max 20_000 (10_000 per 1 data NFT-FT)
+                // max 10_000 (10_000 per 1 data NFT-FT)
             },
         )
         .assert_user_error("Payment fee too high");
@@ -3298,8 +3298,8 @@ fn change_offer_price_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(1u64, managed_biguint!(20_000), managed_biguint!(21_000));
-                // max 20_000 (10_000 per 1 data NFT-FT)
+                sc.change_offer_price(1u64, managed_biguint!(10_000), managed_biguint!(21_000));
+                // max 10_000 (10_000 per 1 data NFT-FT)
             },
         )
         .assert_user_error("Min amount too high");
@@ -3314,6 +3314,25 @@ fn change_offer_price_test() {
             },
         )
         .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            1,
+            &rust_biguint!(10u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(10_0001), // 10 NFTs * 10_000 each = 10_0000 max payment
+                    managed_biguint!(0),
+                    OptionalValue::Some(managed_biguint!(1u64)),
+                );
+            },
+        )
+        .assert_user_error("Payment fee too high");
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
