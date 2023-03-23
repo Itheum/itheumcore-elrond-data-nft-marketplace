@@ -16,7 +16,7 @@ pub struct Offer<M: ManagedTypeApi> {
 }
 #[derive(ManagedVecItem, Clone, NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct OfferOut<M: ManagedTypeApi> {
-    pub index: u64,
+    pub offer_id: u64,
     pub owner: ManagedAddress<M>,
     pub offered_token_identifier: TokenIdentifier<M>,
     pub offered_token_nonce: u64,
@@ -82,13 +82,9 @@ pub trait StorageModule {
     #[storage_mapper("percentage_from_accepter_to_owner")]
     fn percentage_cut_from_buyer(&self) -> SingleValueMapper<BigUint>;
 
-    #[view(getEmptyOfferIndexes)]
-    #[storage_mapper("empty_offer_indexes")]
-    fn empty_offer_indexes(&self) -> UnorderedSetMapper<u64>;
-
     #[view(getHighestOfferIndex)]
-    #[storage_mapper("highest_offer_index")]
-    fn highest_offer_index(&self) -> SingleValueMapper<u64>;
+    #[storage_mapper("last_valid_offer_id")]
+    fn last_valid_offer_id(&self) -> SingleValueMapper<u64>;
 
     #[view(getIsPaused)]
     #[storage_mapper("pause")]

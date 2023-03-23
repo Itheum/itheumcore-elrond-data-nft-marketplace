@@ -126,12 +126,12 @@ pub trait ViewsModule: crate::storage::StorageModule {
     // Function that converts an offer to an offer out (which has more information)
     fn offer_to_offer_out(
         &self,
-        index: u64,
+        offer_id: u64,
         offer: Offer<Self::Api>,
         fee: &BigUint,
     ) -> OfferOut<Self::Api> {
         OfferOut {
-            index,
+            offer_id,
             owner: offer.owner,
             offered_token_identifier: offer.offered_token.token_identifier,
             offered_token_nonce: offer.offered_token.token_nonce,

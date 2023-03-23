@@ -10,7 +10,6 @@ use crate::storage::OfferType;
 pub mod claims;
 pub mod events;
 pub mod offer_accept_utils;
-pub mod offer_adding_utils;
 pub mod requirements;
 pub mod storage;
 pub mod views;
@@ -21,7 +20,6 @@ pub trait DataMarket:
     + requirements::RequirementsModule
     + views::ViewsModule
     + events::EventsModule
-    + offer_adding_utils::OfferAddingUtils
     + offer_accept_utils::OfferAcceptUtils
 {
     #[init]
@@ -211,8 +209,10 @@ pub trait DataMarket:
         );
         data_nft.amount = &data_nft.amount / &existing_quantity;
 
-        let index = self.create_offer_index();
-        self.user_listed_offers(&caller).insert(index);
+        let last_id_mapper = self.last_valid_offer_id();
+        let offer_id = last_id_mapper.get() + 1;
+        last_id_mapper.set(offer_id);
+        self.user_listed_offers(&caller).insert(offer_id);
 
         let offer = Offer {
             owner: caller,
@@ -220,15 +220,15 @@ pub trait DataMarket:
             wanted_token: payment_token,
             quantity: existing_quantity,
         };
-        self.added_offer_event(&index, &offer);
-        self.offers().insert(index, offer);
+        self.added_offer_event(&offer_id, &offer);
+        self.offers().insert(offer_id, offer);
     }
 
     #[endpoint(changeOfferPrice)]
-    fn change_offer_price(&self, index: u64, new_fee: BigUint) {
+    fn change_offer_price(&self, offer_id: u64, new_fee: BigUint) {
         self.require_sc_ready_to_trade();
         let caller = self.blockchain().get_caller();
-        let offer_to_change = self.offers().get(&index);
+        let offer_to_change = self.offers().get(&offer_id);
         match offer_to_change {
             Some(mut offer) => {
                 require!(offer.owner == caller, "Only offer owner can change price");
@@ -246,11 +246,11 @@ pub trait DataMarket:
                     }
                     None => sc_panic!("Token not accepted"),
                 }
-                self.updated_offer_price_event(&index, &new_fee);
+                self.updated_offer_price_event(&offer_id, &new_fee);
                 let payment_token = EgldOrEsdtTokenPayment::new(token_identifier, nonce, new_fee);
 
                 offer.wanted_token = payment_token;
-                self.offers().insert(index, offer);
+                self.offers().insert(offer_id, offer);
             }
             None => sc_panic!("Offer not found"),
         }
@@ -258,8 +258,8 @@ pub trait DataMarket:
 
     // Endpoint that will be callable by offer owner or contract owner to cancel an offer.
     #[endpoint(cancelOffer)]
-    fn cancel_offer(&self, index: u64, quantity: BigUint) {
-        let offer_to_cancel = self.offers().get(&index);
+    fn cancel_offer(&self, offer_id: u64, quantity: BigUint) {
+        let offer_to_cancel = self.offers().get(&offer_id);
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
 
@@ -286,15 +286,14 @@ pub trait DataMarket:
                 );
 
                 if offer.quantity == quantity {
-                    self.user_listed_offers(&offer.owner).swap_remove(&index);
-                    self.offers().remove(&index);
-                    self.empty_offer_indexes().insert(index);
+                    self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
+                    self.offers().remove(&offer_id);
                 } else {
                     offer.quantity -= quantity;
-                    self.offers().insert(index, offer);
+                    self.offers().insert(offer_id, offer);
                 }
 
-                self.cancelled_offer_event(&index);
+                self.cancelled_offer_event(&offer_id);
             }
             None => sc_panic!("Offer not found"),
         }
@@ -303,11 +302,11 @@ pub trait DataMarket:
     // Endpoint that will be callable by users to accept an offer.
     #[payable("*")]
     #[endpoint(acceptOffer)]
-    fn accept_offer(&self, index: u64, quantity: BigUint) {
+    fn accept_offer(&self, offer_id: u64, quantity: BigUint) {
         self.require_sc_ready_to_trade();
 
         let caller = self.blockchain().get_caller();
-        let offer_to_accept = self.offers().get(&index);
+        let offer_to_accept = self.offers().get(&offer_id);
         let payment = self.call_value().egld_or_single_esdt();
 
         match offer_to_accept {
@@ -360,7 +359,7 @@ pub trait DataMarket:
                     );
                 }
 
-                self.accepted_offer_event(&index, &caller, &quantity);
+                self.accepted_offer_event(&offer_id, &caller, &quantity);
 
                 let offered_token = offer.offered_token.clone();
                 let seller = offer.owner.clone();
@@ -379,12 +378,11 @@ pub trait DataMarket:
                 );
 
                 if offer.quantity == quantity {
-                    self.user_listed_offers(&offer.owner).swap_remove(&index);
-                    self.offers().remove(&index);
-                    self.empty_offer_indexes().insert(index);
+                    self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
+                    self.offers().remove(&offer_id);
                 } else {
                     offer.quantity -= quantity;
-                    self.offers().insert(index, offer);
+                    self.offers().insert(offer_id, offer);
                 }
             }
 

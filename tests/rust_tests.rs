@@ -3,7 +3,6 @@ use std::u8;
 use data_market::requirements::RequirementsModule;
 use data_market::storage::*;
 
-use data_market::offer_adding_utils::OfferAddingUtils;
 use data_market::views::ViewsModule;
 use data_market::DataMarket;
 
@@ -1169,105 +1168,6 @@ fn value_setters_test() {
 }
 
 #[test]
-fn create_offer_index_test() {
-    let mut setup = setup_contract(data_market::contract_obj);
-    let b_wrapper = &mut setup.blockchain_wrapper;
-    let owner_address = &setup.owner_address;
-
-    // Test creating an offer index when empty_offer_indexes is empty
-    b_wrapper
-        .execute_tx(
-            owner_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                assert_eq!(sc.create_offer_index(), 0);
-            },
-        )
-        .assert_ok();
-
-    b_wrapper
-        .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(sc.highest_offer_index().get(), 1u64);
-        })
-        .assert_ok();
-
-    b_wrapper
-        .execute_tx(
-            owner_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                assert_eq!(sc.create_offer_index(), 1);
-            },
-        )
-        .assert_ok();
-
-    b_wrapper
-        .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(sc.highest_offer_index().get(), 2u64);
-        })
-        .assert_ok();
-
-    // Test creating an offer index when empty_offer_indexes is not empty and has already the index
-    b_wrapper
-        .execute_tx(
-            owner_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                assert_eq!(sc.empty_offer_indexes().insert(1), true);
-                assert_eq!(sc.empty_offer_indexes().len(), 1usize);
-            },
-        )
-        .assert_ok();
-
-    b_wrapper
-        .execute_tx(
-            owner_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                assert_eq!(sc.create_offer_index(), 1);
-            },
-        )
-        .assert_ok();
-
-    b_wrapper
-        .execute_tx(
-            owner_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                assert_eq!(sc.create_offer_index(), 2);
-            },
-        )
-        .assert_ok();
-
-    b_wrapper
-        .execute_tx(
-            owner_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                assert_eq!(sc.empty_offer_indexes().len(), 0usize);
-            },
-        )
-        .assert_ok();
-
-    b_wrapper
-        .execute_tx(
-            owner_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                assert_eq!(sc.create_offer_index(), 3);
-            },
-        )
-        .assert_ok();
-}
-
-#[test]
 fn add_offer_test() {
     let mut setup = setup_contract(data_market::contract_obj);
     let b_wrapper = &mut setup.blockchain_wrapper;
@@ -1379,9 +1279,8 @@ fn add_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(sc.highest_offer_index().get(), 0u64);
+            assert_eq!(sc.last_valid_offer_id().get(), 0u64);
             assert_eq!(sc.offers().len(), 0usize);
-            assert_eq!(sc.empty_offer_indexes().len(), 0usize)
         })
         .assert_ok();
 
@@ -1421,9 +1320,8 @@ fn add_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(sc.highest_offer_index().get(), 1u64);
+            assert_eq!(sc.last_valid_offer_id().get(), 1u64);
             assert_eq!(sc.offers().len(), 1usize);
-            assert_eq!(sc.empty_offer_indexes().len(), 0usize);
             assert_eq!(
                 sc.user_listed_offers(&managed_address!(first_user_address))
                     .len(),
@@ -1431,7 +1329,7 @@ fn add_offer_test() {
             );
             assert_eq!(
                 sc.user_listed_offers(&managed_address!(first_user_address))
-                    .contains(&0u64),
+                    .contains(&1u64),
                 true
             )
         })
@@ -1454,7 +1352,7 @@ fn add_offer_test() {
                 quantity: managed_biguint!(1u64),
             };
 
-            let offer_from_storage = sc.offers().get(&0u64).unwrap();
+            let offer_from_storage = sc.offers().get(&1u64).unwrap();
 
             assert_eq!(offer_from_storage.owner, offer.owner);
             assert_eq!(offer_from_storage.offered_token, offer.offered_token);
@@ -1537,9 +1435,8 @@ fn add_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(sc.highest_offer_index().get(), 2u64);
+            assert_eq!(sc.last_valid_offer_id().get(), 2u64);
             assert_eq!(sc.offers().len(), 2usize);
-            assert_eq!(sc.empty_offer_indexes().len(), 0usize);
             assert_eq!(
                 sc.user_listed_offers(&managed_address!(second_user_address))
                     .len(),
@@ -1547,7 +1444,7 @@ fn add_offer_test() {
             );
             assert_eq!(
                 sc.user_listed_offers(&managed_address!(second_user_address))
-                    .contains(&1u64),
+                    .contains(&2u64),
                 true
             );
         })
@@ -1586,7 +1483,7 @@ fn add_offer_test() {
                 quantity: managed_biguint!(4u64),
             };
 
-            let offer_from_storage = sc.offers().get(&1u64).unwrap();
+            let offer_from_storage = sc.offers().get(&2u64).unwrap();
 
             assert_eq!(offer_from_storage.owner, offer.owner);
             assert_eq!(offer_from_storage.offered_token, offer.offered_token);
@@ -1731,7 +1628,7 @@ fn cancel_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.cancel_offer(0u64, managed_biguint!(1u64));
+                sc.cancel_offer(1u64, managed_biguint!(1u64));
             },
         )
         .assert_user_error("Only special addresses can cancel offers");
@@ -1742,7 +1639,7 @@ fn cancel_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.cancel_offer(0u64, managed_biguint!(30u64));
+                sc.cancel_offer(1u64, managed_biguint!(30u64));
             },
         )
         .assert_user_error("Quantity too high");
@@ -1753,7 +1650,7 @@ fn cancel_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.cancel_offer(0u64, managed_biguint!(1u64));
+                sc.cancel_offer(1u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
@@ -1764,7 +1661,7 @@ fn cancel_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.cancel_offer(1u64, managed_biguint!(2u64));
+                sc.cancel_offer(2u64, managed_biguint!(2u64));
             },
         )
         .assert_ok();
@@ -1775,7 +1672,7 @@ fn cancel_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.cancel_offer(1u64, managed_biguint!(1u64));
+                sc.cancel_offer(2u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
@@ -1783,7 +1680,6 @@ fn cancel_offer_test() {
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
             assert_eq!(sc.offers().len(), 1usize);
-            assert_eq!(sc.empty_offer_indexes().len(), 1usize);
             assert_eq!(
                 sc.user_listed_offers(&managed_address!(first_user_address))
                     .len(),
@@ -1796,12 +1692,12 @@ fn cancel_offer_test() {
             );
             assert_eq!(
                 sc.user_listed_offers(&managed_address!(first_user_address))
-                    .contains(&0u64),
+                    .contains(&1u64),
                 false
             );
             assert_eq!(
                 sc.user_listed_offers(&managed_address!(second_user_address))
-                    .contains(&1u64),
+                    .contains(&2u64),
                 true
             );
         })
@@ -1934,7 +1830,7 @@ fn accept_offer_test() {
             0u64,
             &rust_biguint!(0u64),
             |sc| {
-                sc.accept_offer(0u64, managed_biguint!(4u64));
+                sc.accept_offer(1u64, managed_biguint!(4u64));
             },
         )
         .assert_user_error("You cannot accept your own offer");
@@ -1947,7 +1843,7 @@ fn accept_offer_test() {
             0u64,
             &rust_biguint!(0u64),
             |sc| {
-                sc.accept_offer(0u64, managed_biguint!(4u64));
+                sc.accept_offer(1u64, managed_biguint!(4u64));
             },
         )
         .assert_user_error("Not enough quantity");
@@ -1960,7 +1856,7 @@ fn accept_offer_test() {
             0u64,
             &rust_biguint!(0u64),
             |sc| {
-                sc.accept_offer(0u64, managed_biguint!(1u64));
+                sc.accept_offer(1u64, managed_biguint!(1u64));
             },
         )
         .assert_user_error("Wrong token payment");
@@ -1973,7 +1869,7 @@ fn accept_offer_test() {
             0u64,
             &rust_biguint!(0u64),
             |sc| {
-                sc.accept_offer(0u64, managed_biguint!(1u64));
+                sc.accept_offer(1u64, managed_biguint!(1u64));
             },
         )
         .assert_user_error("Wrong token payment amount");
@@ -2001,7 +1897,7 @@ fn accept_offer_test() {
             &(&rust_biguint!(100)
                 + ((&rust_biguint!(100) * rust_biguint!(200u64)) / rust_biguint!(10000u64))), // buyer needs to send with % fee included
             |sc| {
-                sc.accept_offer(0u64, managed_biguint!(1u64));
+                sc.accept_offer(1u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
@@ -2015,7 +1911,7 @@ fn accept_offer_test() {
             );
             assert_eq!(
                 sc.user_listed_offers(&managed_address!(second_user_address))
-                    .contains(&0u64),
+                    .contains(&1u64),
                 true
             );
         })
@@ -2104,7 +2000,7 @@ fn accept_offer_test() {
             &(&rust_biguint!(1_000)
                 + ((&rust_biguint!(1_000) * rust_biguint!(200u64)) / rust_biguint!(10000u64))), // buyer needs to send with % fee included
             |sc| {
-                sc.accept_offer(1u64, managed_biguint!(1u64));
+                sc.accept_offer(2u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
@@ -2118,7 +2014,7 @@ fn accept_offer_test() {
             );
             assert_eq!(
                 sc.user_listed_offers(&managed_address!(first_user_address))
-                    .contains(&1u64),
+                    .contains(&2u64),
                 false
             );
         })
@@ -2204,7 +2100,7 @@ fn accept_offer_test() {
                 quantity: managed_biguint!(2u64),
             };
 
-            let offer_from_storage = sc.offers().get(&1u64).unwrap();
+            let offer_from_storage = sc.offers().get(&3u64).unwrap();
 
             assert_eq!(offer_from_storage.owner, offer.owner);
             assert_eq!(offer_from_storage.offered_token, offer.offered_token);
@@ -2263,7 +2159,7 @@ fn accept_offer_test() {
             &(&rust_biguint!(100)
                 + ((&rust_biguint!(100) * rust_biguint!(150u64)) / rust_biguint!(10000u64))), // buyer needs to send with % fee included
             |sc| {
-                sc.accept_offer(1u64, managed_biguint!(1u64));
+                sc.accept_offer(3u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
@@ -2319,7 +2215,7 @@ fn accept_offer_test() {
             0,
             &rust_biguint!(0), // buyer needs to send with % fee included
             |sc| {
-                sc.accept_offer(2u64, managed_biguint!(1u64));
+                sc.accept_offer(4u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
@@ -2509,7 +2405,7 @@ fn accept_offer_non_accepted_royalties_token_id_test() {
             &(&rust_biguint!(200u64)
                 + ((&rust_biguint!(200u64) * rust_biguint!(200u64)) / rust_biguint!(10000u64))),
             |sc| {
-                sc.accept_offer(0u64, managed_biguint!(1u64));
+                sc.accept_offer(1u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
@@ -2569,7 +2465,7 @@ fn accept_offer_non_accepted_royalties_token_id_test() {
             &(&rust_biguint!(200u64)
                 + ((&rust_biguint!(200u64) * rust_biguint!(200u64)) / rust_biguint!(10000u64))),
             |sc| {
-                sc.accept_offer(0u64, managed_biguint!(1u64));
+                sc.accept_offer(2u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
@@ -2700,9 +2596,8 @@ fn views_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(sc.highest_offer_index().get(), 1u64);
+            assert_eq!(sc.last_valid_offer_id().get(), 1u64);
             assert_eq!(sc.offers().len(), 1usize);
-            assert_eq!(sc.empty_offer_indexes().len(), 0usize);
         })
         .assert_ok();
 
@@ -2723,7 +2618,7 @@ fn views_test() {
                 quantity: managed_biguint!(1u64),
             };
 
-            let offer_from_storage = sc.offers().get(&0u64).unwrap();
+            let offer_from_storage = sc.offers().get(&1u64).unwrap();
 
             assert_eq!(offer_from_storage.owner, offer.owner);
             assert_eq!(offer_from_storage.offered_token, offer.offered_token);
@@ -2783,7 +2678,7 @@ fn views_test() {
                 quantity: managed_biguint!(4u64),
             };
 
-            let offer_from_storage = sc.offers().get(&1u64).unwrap();
+            let offer_from_storage = sc.offers().get(&2u64).unwrap();
 
             assert_eq!(offer_from_storage.owner, offer.owner);
             assert_eq!(offer_from_storage.offered_token, offer.offered_token);
@@ -2801,7 +2696,7 @@ fn views_test() {
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
             let offer_mock = OfferOut::<DebugApi> {
-                index: 0u64,
+                offer_id: 1u64,
                 owner: managed_address!(first_user_address),
                 offered_token_identifier: managed_token_id!(SFT_TICKER),
                 offered_token_nonce: 1u64,
@@ -2812,9 +2707,9 @@ fn views_test() {
                 quantity: managed_biguint!(1u64),
             };
 
-            let offer_out = sc.view_offer(0u64).unwrap();
+            let offer_out = sc.view_offer(1u64).unwrap();
 
-            assert_eq!(offer_out.index, offer_mock.index);
+            assert_eq!(offer_out.offer_id, offer_mock.offer_id);
             assert_eq!(offer_out.owner, offer_mock.owner);
             assert_eq!(
                 offer_out.offered_token_identifier,
@@ -2843,7 +2738,7 @@ fn views_test() {
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
             let offer_mock_1 = OfferOut::<DebugApi> {
-                index: 0u64,
+                offer_id: 1u64,
                 owner: managed_address!(first_user_address),
                 offered_token_identifier: managed_token_id!(SFT_TICKER),
                 offered_token_nonce: 1u64,
@@ -2855,7 +2750,7 @@ fn views_test() {
             };
 
             let offer_mock_2 = OfferOut::<DebugApi> {
-                index: 1u64,
+                offer_id: 2u64,
                 owner: managed_address!(second_user_address),
                 offered_token_identifier: managed_token_id!(SFT_TICKER),
                 offered_token_nonce: 2u64,
@@ -2868,7 +2763,7 @@ fn views_test() {
 
             let offers = sc.view_offers_paged(0u64, 1u64, OptionalValue::None);
 
-            assert_eq!(offers.get(0usize).index, offer_mock_1.index);
+            assert_eq!(offers.get(0usize).offer_id, offer_mock_1.offer_id);
             assert_eq!(offers.get(0usize).owner, offer_mock_1.owner);
             assert_eq!(
                 offers.get(0usize).offered_token_identifier,
@@ -2896,7 +2791,7 @@ fn views_test() {
             );
             assert_eq!(offers.get(0usize).quantity, offer_mock_1.quantity);
 
-            assert_eq!(offers.get(1usize).index, offer_mock_2.index);
+            assert_eq!(offers.get(1usize).offer_id, offer_mock_2.offer_id);
             assert_eq!(offers.get(1usize).owner, offer_mock_2.owner);
             assert_eq!(
                 offers.get(1usize).offered_token_identifier,
@@ -2930,7 +2825,7 @@ fn views_test() {
                 OptionalValue::Some(managed_address!(first_user_address)),
             );
 
-            assert_eq!(offers_2.get(0usize).index, offer_mock_1.index);
+            assert_eq!(offers_2.get(0usize).offer_id, offer_mock_1.offer_id);
             assert_eq!(offers_2.get(0usize).owner, offer_mock_1.owner);
             assert_eq!(
                 offers_2.get(0usize).offered_token_identifier,
@@ -2966,12 +2861,12 @@ fn views_test() {
             );
 
             let mut multi_values = MultiValueEncoded::new();
-            multi_values.push(0u64);
             multi_values.push(1u64);
+            multi_values.push(2u64);
 
             let offers_3 = sc.view_offers(multi_values);
 
-            assert_eq!(offers_3.get(0usize).index, offer_mock_1.index);
+            assert_eq!(offers_3.get(0usize).offer_id, offer_mock_1.offer_id);
             assert_eq!(offers_3.get(0usize).owner, offer_mock_1.owner);
             assert_eq!(
                 offers_3.get(0usize).offered_token_identifier,
@@ -2999,7 +2894,7 @@ fn views_test() {
             );
             assert_eq!(offers_3.get(0usize).quantity, offer_mock_1.quantity);
 
-            assert_eq!(offers_3.get(1usize).index, offer_mock_2.index);
+            assert_eq!(offers_3.get(1usize).offer_id, offer_mock_2.offer_id);
             assert_eq!(offers_3.get(1usize).owner, offer_mock_2.owner);
             assert_eq!(
                 offers_3.get(1usize).offered_token_identifier,
@@ -3029,7 +2924,7 @@ fn views_test() {
 
             let offers_4 = sc.view_user_listed_offers(&managed_address!(first_user_address));
 
-            assert_eq!(offers_4.get(0usize).index, offer_mock_1.index);
+            assert_eq!(offers_4.get(0usize).offer_id, offer_mock_1.offer_id);
             assert_eq!(offers_4.get(0usize).owner, offer_mock_1.owner);
             assert_eq!(
                 offers_4.get(0usize).offered_token_identifier,
@@ -3058,7 +2953,7 @@ fn views_test() {
             assert_eq!(offers_4.get(0usize).quantity, offer_mock_1.quantity);
 
             let offers_5 = sc.view_user_listed_offers(&managed_address!(second_user_address));
-            assert_eq!(offers_5.get(0usize).index, offer_mock_2.index);
+            assert_eq!(offers_5.get(0usize).offer_id, offer_mock_2.offer_id);
             assert_eq!(offers_5.get(0usize).owner, offer_mock_2.owner);
             assert_eq!(
                 offers_5.get(0usize).offered_token_identifier,
@@ -3224,7 +3119,7 @@ fn change_offer_price_test() {
                 quantity: managed_biguint!(2u64),
             };
 
-            let offer_from_storage = sc.offers().get(&0u64).unwrap();
+            let offer_from_storage = sc.offers().get(&1u64).unwrap();
 
             assert_eq!(offer_from_storage.owner, offer.owner);
             assert_eq!(offer_from_storage.offered_token, offer.offered_token);
@@ -3239,7 +3134,7 @@ fn change_offer_price_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(0u64, managed_biguint!(21_000)); // max 20_000 (10_000 per 1 data NFT-FT)
+                sc.change_offer_price(1u64, managed_biguint!(21_000)); // max 20_000 (10_000 per 1 data NFT-FT)
             },
         )
         .assert_user_error("Payment fee too high");
@@ -3250,7 +3145,7 @@ fn change_offer_price_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(0u64, managed_biguint!(200u64));
+                sc.change_offer_price(1u64, managed_biguint!(200u64));
             },
         )
         .assert_ok();
@@ -3272,7 +3167,7 @@ fn change_offer_price_test() {
                 quantity: managed_biguint!(2u64),
             };
 
-            let offer_from_storage = sc.offers().get(&0u64).unwrap();
+            let offer_from_storage = sc.offers().get(&1u64).unwrap();
 
             assert_eq!(offer_from_storage.owner, offer.owner);
             assert_eq!(offer_from_storage.offered_token, offer.offered_token);
@@ -3290,7 +3185,7 @@ fn change_offer_price_test() {
             &(&rust_biguint!(200)
                 + ((&rust_biguint!(200) * rust_biguint!(200u64)) / rust_biguint!(10000u64))), // buys with the updated price
             |sc| {
-                sc.accept_offer(0u64, managed_biguint!(1u64));
+                sc.accept_offer(1u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
@@ -3389,7 +3284,7 @@ fn accept_free_offer_test() {
                 quantity: managed_biguint!(2u64),
             };
 
-            let offer_from_storage = sc.offers().get(&0u64).unwrap();
+            let offer_from_storage = sc.offers().get(&1u64).unwrap();
 
             assert_eq!(offer_from_storage.owner, offer.owner);
             assert_eq!(offer_from_storage.offered_token, offer.offered_token);
@@ -3404,7 +3299,7 @@ fn accept_free_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(0u64, managed_biguint!(21_000));
+                sc.change_offer_price(1u64, managed_biguint!(21_000));
             },
         )
         .assert_user_error("Payment fee too high");
@@ -3415,7 +3310,7 @@ fn accept_free_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(0u64, managed_biguint!(0u64));
+                sc.change_offer_price(1u64, managed_biguint!(0u64));
             },
         )
         .assert_ok();
@@ -3437,7 +3332,7 @@ fn accept_free_offer_test() {
                 quantity: managed_biguint!(2u64),
             };
 
-            let offer_from_storage = sc.offers().get(&0u64).unwrap();
+            let offer_from_storage = sc.offers().get(&1u64).unwrap();
 
             assert_eq!(offer_from_storage.owner, offer.owner);
             assert_eq!(offer_from_storage.offered_token, offer.offered_token);
@@ -3452,7 +3347,7 @@ fn accept_free_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.accept_offer(0u64, managed_biguint!(1u64));
+                sc.accept_offer(1u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
@@ -3558,7 +3453,7 @@ fn accept_offer_with_egld() {
                 quantity: managed_biguint!(2u64),
             };
 
-            let offer_from_storage = sc.offers().get(&0u64).unwrap();
+            let offer_from_storage = sc.offers().get(&1u64).unwrap();
 
             assert_eq!(offer_from_storage.owner, offer.owner);
             assert_eq!(offer_from_storage.offered_token, offer.offered_token);
@@ -3573,7 +3468,7 @@ fn accept_offer_with_egld() {
             &setup.contract_wrapper,
             &rust_biguint!(102u64),
             |sc| {
-                sc.accept_offer(0u64, managed_biguint!(1u64));
+                sc.accept_offer(1u64, managed_biguint!(1u64));
             },
         )
         .assert_ok();
