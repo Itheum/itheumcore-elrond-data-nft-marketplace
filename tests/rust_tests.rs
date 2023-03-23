@@ -10,7 +10,8 @@ use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
 use multiversx_sc::storage::mappers::StorageClearable;
 use multiversx_sc::types::{
-    Address, EgldOrEsdtTokenPayment, EsdtLocalRole, EsdtTokenPayment, ManagedVec, MultiValueEncoded,
+    Address, EgldOrEsdtTokenIdentifier, EgldOrEsdtTokenPayment, EsdtLocalRole, EsdtTokenPayment,
+    ManagedVec, MultiValueEncoded,
 };
 use multiversx_sc_scenario::multiversx_chain_vm::tx_mock::TxContextRef;
 use multiversx_sc_scenario::testing_framework::{BlockchainStateWrapper, ContractObjWrapper};
@@ -1778,6 +1779,7 @@ fn accept_offer_test() {
             &rust_biguint!(0u64),
             |sc| {
                 sc.set_claims_contract(managed_address!(claims_address));
+                sc.set_claim_is_enabled(true);
             },
         )
         .assert_ok();
@@ -2024,10 +2026,10 @@ fn accept_offer_test() {
     assert_eq!(treasury_address_balance, rust_biguint!(44u64)); // 2% from buyer , 2 % from seller  total: 40 tokens
 
     let second_user_balance = b_wrapper.get_esdt_balance(second_user_address, TOKEN_ID, 0u64);
-    assert_eq!(second_user_balance, rust_biguint!(10_147)); // 10_098 initial balance + 49 (5 %) royalties
+    assert_eq!(second_user_balance, rust_biguint!(10_098)); // 10_098 initial balance + 49 (5 %) royalties
 
     let claims_contract_balance = b_wrapper.get_esdt_balance(claims_address, TOKEN_ID, 0u64);
-    assert_eq!(claims_contract_balance, rust_biguint!(0u64)); // 49 tokens royalties    5%
+    assert_eq!(claims_contract_balance, rust_biguint!(49u64)); // 49 tokens royalties (second user)  5%
 
     let first_user_balance = b_wrapper.get_esdt_balance(first_user_address, TOKEN_ID, 0u64);
     assert_eq!(first_user_balance, rust_biguint!(10_829)); // 9_898 initial balance + 931 (1_000 - 49 - 20) sale price after taxes
@@ -2145,7 +2147,7 @@ fn accept_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.set_claim_is_enabled(true);
+                sc.set_claim_is_enabled(false);
             },
         )
         .assert_ok();
@@ -3368,6 +3370,8 @@ fn accept_offer_with_egld() {
     let treasury_address = &setup.treasury_address;
     let first_user_address = &setup.first_user_address;
     let second_user_address = &setup.second_user_address;
+    let third_user_address = &setup.third_user_address;
+    let claims_address = &setup.claims_address;
 
     // Test add_accepted_payment function
     b_wrapper
@@ -3376,9 +3380,10 @@ fn accept_offer_with_egld() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.add_accepted_payment(
-                    managed_token_id_wrapped!("EGLD"),
-                    managed_biguint!(10_000),
+                sc.add_accepted_payment(managed_egld_token_id!(), managed_biguint!(10_000));
+                assert_eq!(
+                    EgldOrEsdtTokenIdentifier::<DebugApi>::egld(),
+                    managed_egld_token_id!()
                 );
             },
         )
@@ -3414,6 +3419,9 @@ fn accept_offer_with_egld() {
             &rust_biguint!(0u64),
             |sc| {
                 sc.set_is_paused(false);
+                sc.set_claim_is_enabled(true);
+                sc.claims_address().set(managed_address!(claims_address));
+                sc.set_royalties_claims_token(managed_token_id!(TOKEN_ID));
             },
         )
         .assert_ok();
@@ -3427,9 +3435,9 @@ fn accept_offer_with_egld() {
             &rust_biguint!(2u64),
             |sc| {
                 sc.add_offer(
-                    managed_token_id_wrapped!("EGLD"),
+                    managed_egld_token_id!(),
                     0u64,
-                    managed_biguint!(100u64),
+                    managed_biguint!(1_000),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -3448,7 +3456,7 @@ fn accept_offer_with_egld() {
                 wanted_token: EgldOrEsdtTokenPayment::new(
                     managed_egld_token_id!(),
                     0,
-                    managed_biguint!(100u64),
+                    managed_biguint!(1_000),
                 ),
                 quantity: managed_biguint!(2u64),
             };
@@ -3466,7 +3474,7 @@ fn accept_offer_with_egld() {
         .execute_tx(
             first_user_address,
             &setup.contract_wrapper,
-            &rust_biguint!(102u64),
+            &rust_biguint!(1_020),
             |sc| {
                 sc.accept_offer(1u64, managed_biguint!(1u64));
             },
@@ -3474,8 +3482,89 @@ fn accept_offer_with_egld() {
         .assert_ok();
 
     let treasury_address_balance = b_wrapper.get_egld_balance(treasury_address);
-    assert_eq!(treasury_address_balance, rust_biguint!(4)); // 2% from seller + 2 % from buyer
+    assert_eq!(treasury_address_balance, rust_biguint!(40)); // 2% from seller + 2 % from buyer
 
     let second_user_address_balance = b_wrapper.get_egld_balance(second_user_address);
-    assert_eq!(second_user_address_balance, rust_biguint!(198)); // 100 initial balance of the seller + 98 from the trade
+    assert_eq!(second_user_address_balance, rust_biguint!(1_080));
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(1u64),
+            |sc| {
+                sc.add_offer(
+                    managed_egld_token_id!(),
+                    0u64,
+                    managed_biguint!(1_000),
+                    OptionalValue::Some(managed_biguint!(1u64)),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            third_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(1_020),
+            |sc| {
+                sc.accept_offer(2u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_ok();
+
+    let treasury_address_balance = b_wrapper.get_egld_balance(treasury_address);
+    assert_eq!(treasury_address_balance, rust_biguint!(80)); // 2% from seller + 2 % from buyer
+
+    let second_user_address_balance = b_wrapper.get_egld_balance(second_user_address);
+    assert_eq!(second_user_address_balance, rust_biguint!(1_129)); // 1_080 +  (49) 5% royalties
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_claim_is_enabled(false);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            third_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(1u64),
+            |sc| {
+                sc.add_offer(
+                    managed_egld_token_id!(),
+                    0u64,
+                    managed_biguint!(1_000),
+                    OptionalValue::Some(managed_biguint!(1u64)),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            first_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(1_020),
+            |sc| {
+                sc.accept_offer(3u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_ok();
+
+    let treasury_address_balance = b_wrapper.get_egld_balance(treasury_address);
+    assert_eq!(treasury_address_balance, rust_biguint!(120)); // 2% from seller + 2 % from buyer
+
+    let second_user_address_balance = b_wrapper.get_egld_balance(second_user_address);
+    assert_eq!(second_user_address_balance, rust_biguint!(1_178)); // 1_129 + (49) 5% royalties
 }

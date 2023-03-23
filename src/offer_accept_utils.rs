@@ -115,12 +115,19 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                 &(&buyer_payment - &creator_royalties - &fee_from_seller - &fee_from_buyer),
             );
 
-            let payment_token_id = payment_token.token_identifier.clone().unwrap_esdt();
+            let payment_token_id = payment_token.token_identifier.clone();
             let claim_is_enabled = self.claim_is_enabled().get();
 
             match claim_is_enabled {
                 true => {
-                    if &payment_token_id != &self.royalties_claim_token().get() {
+                    if payment_token_id.is_egld() {
+                        self.send().direct(
+                            &creator,
+                            &payment_token.token_identifier,
+                            payment_token.token_nonce,
+                            &creator_royalties,
+                        );
+                    } else if &payment_token_id != &self.royalties_claim_token().get() {
                         self.send().direct(
                             &creator,
                             &payment_token.token_identifier,
@@ -128,13 +135,15 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                             &creator_royalties,
                         );
                     } else {
+                        let claim_payment = EsdtTokenPayment::new(
+                            payment_token_id.unwrap_esdt(),
+                            payment_token.token_nonce,
+                            creator_royalties,
+                        );
+
                         self.claims_proxy(self.claims_address().get())
                             .add_claim(&creator, ClaimType::Royalties)
-                            .with_esdt_transfer(EsdtTokenPayment::new(
-                                payment_token_id,
-                                payment_token.token_nonce,
-                                creator_royalties,
-                            ))
+                            .with_esdt_transfer(claim_payment)
                             .transfer_execute();
                     }
                 }
