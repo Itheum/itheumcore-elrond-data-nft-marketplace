@@ -708,6 +708,7 @@ fn requirements_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(100),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -740,6 +741,7 @@ fn requirements_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(100),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -770,6 +772,7 @@ fn requirements_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(100),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -799,6 +802,7 @@ fn requirements_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(100),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -828,6 +832,7 @@ fn requirements_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(100),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -1134,6 +1139,7 @@ fn value_setters_test() {
                         managed_biguint!(200u64),
                     ),
                     quantity: managed_biguint!(1u64),
+                    min_amount_for_seller: managed_biguint!(0u64),
                 };
                 sc.offers().insert(1u64, offer);
             },
@@ -1155,6 +1161,7 @@ fn value_setters_test() {
                     managed_biguint!(200u64),
                 ),
                 quantity: managed_biguint!(1u64),
+                min_amount_for_seller: managed_biguint!(0u64),
             };
             assert_eq!(sc.offers().len(), 1usize);
 
@@ -1225,6 +1232,7 @@ fn add_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0u64),
                     OptionalValue::Some(managed_biguint!(1u64)),
                 );
             },
@@ -1254,6 +1262,7 @@ fn add_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::None,
                 );
             },
@@ -1272,6 +1281,7 @@ fn add_offer_test() {
                     managed_token_id_wrapped!(ANOTHER_TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::None,
                 );
             },
@@ -1297,6 +1307,7 @@ fn add_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::None,
                 );
             },
@@ -1351,6 +1362,7 @@ fn add_offer_test() {
                     managed_biguint!(200u64),
                 ),
                 quantity: managed_biguint!(1u64),
+                min_amount_for_seller: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -1374,6 +1386,7 @@ fn add_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(0u64)),
                 );
             },
@@ -1392,6 +1405,7 @@ fn add_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(21u64)),
                 );
             },
@@ -1410,6 +1424,7 @@ fn add_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(3u64)),
                 );
             },
@@ -1427,7 +1442,27 @@ fn add_offer_test() {
                 sc.add_offer(
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
-                    managed_biguint!(0u64),
+                    managed_biguint!(1u64),
+                    managed_biguint!(1_000),
+                    OptionalValue::Some(managed_biguint!(4u64)),
+                );
+            },
+        )
+        .assert_user_error("Min amount too high");
+
+    b_wrapper
+        .execute_esdt_transfer(
+            second_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(20u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(1u64),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(4u64)),
                 );
             },
@@ -1479,9 +1514,10 @@ fn add_offer_test() {
                 wanted_token: EgldOrEsdtTokenPayment::new(
                     managed_token_id_wrapped!(TOKEN_ID),
                     0,
-                    managed_biguint!(0u64),
+                    managed_biguint!(1u64),
                 ),
                 quantity: managed_biguint!(4u64),
+                min_amount_for_seller: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&2u64).unwrap();
@@ -1599,6 +1635,7 @@ fn cancel_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::None,
                 );
             },
@@ -1617,6 +1654,7 @@ fn cancel_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(4u64)),
                 );
             },
@@ -1894,6 +1932,7 @@ fn accept_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(100),
+                    managed_biguint!(99),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -1965,6 +2004,29 @@ fn accept_offer_test() {
             },
         )
         .assert_user_error("Offer not found");
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            TOKEN_ID,
+            0,
+            &(&rust_biguint!(100)
+                + ((&rust_biguint!(100) * rust_biguint!(200u64)) / rust_biguint!(10000u64))), // buyer needs to send with % fee included
+            |sc| {
+                sc.accept_offer(1u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_user_error("Minimum amount for seller not filled");
+
+    b_wrapper
+        .execute_tx(
+            &second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| sc.change_offer_price(1u64, managed_biguint!(100u64), managed_biguint!(98u64)),
+        )
+        .assert_ok();
 
     b_wrapper
         .execute_esdt_transfer(
@@ -2053,6 +2115,7 @@ fn accept_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(1_000),
+                    managed_biguint!(0),
                     OptionalValue::None,
                 );
             },
@@ -2155,6 +2218,7 @@ fn accept_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(100),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -2176,6 +2240,7 @@ fn accept_offer_test() {
                     managed_biguint!(100u64),
                 ),
                 quantity: managed_biguint!(2u64),
+                min_amount_for_seller: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&3u64).unwrap();
@@ -2278,6 +2343,7 @@ fn accept_offer_test() {
                 sc.add_offer(
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
+                    managed_biguint!(0),
                     managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(1u64)),
                 );
@@ -2468,6 +2534,7 @@ fn accept_offer_non_accepted_royalties_token_id_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(1u64)),
                 );
             },
@@ -2528,6 +2595,7 @@ fn accept_offer_non_accepted_royalties_token_id_test() {
                     managed_token_id_wrapped!(ANOTHER_TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(1u64)),
                 );
             },
@@ -2650,6 +2718,7 @@ fn views_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::None,
                 );
             },
@@ -2694,6 +2763,7 @@ fn views_test() {
                     managed_biguint!(200u64),
                 ),
                 quantity: managed_biguint!(1u64),
+                min_amount_for_seller: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -2717,6 +2787,7 @@ fn views_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(200u64),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(4u64)),
                 );
             },
@@ -2754,6 +2825,7 @@ fn views_test() {
                     managed_biguint!(200u64),
                 ),
                 quantity: managed_biguint!(4u64),
+                min_amount_for_seller: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&2u64).unwrap();
@@ -3174,6 +3246,7 @@ fn change_offer_price_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(100),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -3195,6 +3268,7 @@ fn change_offer_price_test() {
                     managed_biguint!(100u64),
                 ),
                 quantity: managed_biguint!(2u64),
+                min_amount_for_seller: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3212,7 +3286,8 @@ fn change_offer_price_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(1u64, managed_biguint!(21_000)); // max 20_000 (10_000 per 1 data NFT-FT)
+                sc.change_offer_price(1u64, managed_biguint!(21_000), managed_biguint!(0));
+                // max 20_000 (10_000 per 1 data NFT-FT)
             },
         )
         .assert_user_error("Payment fee too high");
@@ -3223,7 +3298,19 @@ fn change_offer_price_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(1u64, managed_biguint!(200u64));
+                sc.change_offer_price(1u64, managed_biguint!(20_000), managed_biguint!(21_000));
+                // max 20_000 (10_000 per 1 data NFT-FT)
+            },
+        )
+        .assert_user_error("Min amount too high");
+
+    b_wrapper
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.change_offer_price(1u64, managed_biguint!(200u64), managed_biguint!(0));
             },
         )
         .assert_ok();
@@ -3243,6 +3330,7 @@ fn change_offer_price_test() {
                     managed_biguint!(200u64),
                 ),
                 quantity: managed_biguint!(2u64),
+                min_amount_for_seller: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3339,6 +3427,7 @@ fn accept_free_offer_test() {
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(100),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -3360,6 +3449,7 @@ fn accept_free_offer_test() {
                     managed_biguint!(100u64),
                 ),
                 quantity: managed_biguint!(2u64),
+                min_amount_for_seller: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3377,7 +3467,7 @@ fn accept_free_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(1u64, managed_biguint!(21_000));
+                sc.change_offer_price(1u64, managed_biguint!(21_000), managed_biguint!(0));
             },
         )
         .assert_user_error("Payment fee too high");
@@ -3388,7 +3478,7 @@ fn accept_free_offer_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                sc.change_offer_price(1u64, managed_biguint!(0u64));
+                sc.change_offer_price(1u64, managed_biguint!(0u64), managed_biguint!(0));
             },
         )
         .assert_ok();
@@ -3408,6 +3498,7 @@ fn accept_free_offer_test() {
                     managed_biguint!(0u64),
                 ),
                 quantity: managed_biguint!(2u64),
+                min_amount_for_seller: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3514,6 +3605,7 @@ fn accept_offer_with_egld() {
                     managed_egld_token_id!(),
                     0u64,
                     managed_biguint!(1_000),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(2u64)),
                 );
             },
@@ -3535,6 +3627,7 @@ fn accept_offer_with_egld() {
                     managed_biguint!(1_000),
                 ),
                 quantity: managed_biguint!(2u64),
+                min_amount_for_seller: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3575,6 +3668,7 @@ fn accept_offer_with_egld() {
                     managed_egld_token_id!(),
                     0u64,
                     managed_biguint!(1_000),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(1u64)),
                 );
             },
@@ -3621,6 +3715,7 @@ fn accept_offer_with_egld() {
                     managed_egld_token_id!(),
                     0u64,
                     managed_biguint!(1_000),
+                    managed_biguint!(0),
                     OptionalValue::Some(managed_biguint!(1u64)),
                 );
             },

@@ -12,6 +12,7 @@ pub struct Offer<M: ManagedTypeApi> {
     pub owner: ManagedAddress<M>,
     pub offered_token: EsdtTokenPayment<M>,
     pub wanted_token: EgldOrEsdtTokenPayment<M>,
+    pub min_amount_for_seller: BigUint<M>,
     pub quantity: BigUint<M>,
 }
 #[derive(

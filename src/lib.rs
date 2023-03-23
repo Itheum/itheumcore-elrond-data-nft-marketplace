@@ -166,6 +166,7 @@ pub trait DataMarket:
         payment_token_id: EgldOrEsdtTokenIdentifier,
         payment_token_nonce: u64,
         payment_token_fee: BigUint,
+        min_amount_for_seller: BigUint,
         opt_quantity: OptionalValue<BigUint>,
     ) {
         self.require_sc_ready_to_trade();
@@ -189,8 +190,10 @@ pub trait DataMarket:
             "Quantity must be less than offered token amount"
         );
 
-        let maximum_fee = self.accepted_payments().get(&payment_token_id);
+        //[TO DO] Remove match case
+        let maximum_fee = self.accepted_payments().get(&payment_token_id); // [TO DO] this can be safely unwrapped as check is done above
         match maximum_fee {
+            // Unnecessary match case
             Some(maximum_fee) => {
                 require!(
                     payment_token_fee <= &maximum_fee * &existing_quantity,
@@ -200,14 +203,19 @@ pub trait DataMarket:
             None => sc_panic!("Token not accepted"),
         }
 
-        let payment_token =
-            EgldOrEsdtTokenPayment::new(payment_token_id, payment_token_nonce, payment_token_fee);
-
         require!(
             &data_nft.amount % &existing_quantity == 0,
             "Quantity must be a divisor of offered token amount"
         );
         data_nft.amount = &data_nft.amount / &existing_quantity;
+
+        require!(
+            min_amount_for_seller <= &payment_token_fee * &data_nft.amount,
+            "Min amount too high"
+        );
+
+        let payment_token =
+            EgldOrEsdtTokenPayment::new(payment_token_id, payment_token_nonce, payment_token_fee);
 
         let last_id_mapper = self.last_valid_offer_id();
         let offer_id = last_id_mapper.get() + 1;
@@ -218,6 +226,7 @@ pub trait DataMarket:
             owner: caller,
             offered_token: data_nft,
             wanted_token: payment_token,
+            min_amount_for_seller,
             quantity: existing_quantity,
         };
         self.added_offer_event(&offer_id, &offer);
@@ -225,7 +234,7 @@ pub trait DataMarket:
     }
 
     #[endpoint(changeOfferPrice)]
-    fn change_offer_price(&self, offer_id: u64, new_fee: BigUint) {
+    fn change_offer_price(&self, offer_id: u64, new_fee: BigUint, min_amount_for_seller: BigUint) {
         self.require_sc_ready_to_trade();
         let caller = self.blockchain().get_caller();
         let offer_to_change = self.offers().get(&offer_id);
@@ -246,9 +255,14 @@ pub trait DataMarket:
                     }
                     None => sc_panic!("Token not accepted"),
                 }
+
+                require!(
+                    min_amount_for_seller <= &new_fee * &offer.offered_token.amount,
+                    "Min amount too high"
+                );
                 self.updated_offer_price_event(&offer_id, &new_fee);
                 let payment_token = EgldOrEsdtTokenPayment::new(token_identifier, nonce, new_fee);
-
+                offer.min_amount_for_seller = min_amount_for_seller;
                 offer.wanted_token = payment_token;
                 self.offers().insert(offer_id, offer);
             }
@@ -388,6 +402,7 @@ pub trait DataMarket:
 
                 let offered_token = offer.offered_token.clone();
                 let seller = offer.owner.clone();
+                let min_amount_for_seller = offer.min_amount_for_seller.clone();
 
                 self.distribute_tokens(
                     payment,
@@ -400,6 +415,7 @@ pub trait DataMarket:
                     fee_from_seller,
                     token_attributes.creator,
                     creator_royalties,
+                    min_amount_for_seller,
                 );
 
                 if offer.quantity == quantity {

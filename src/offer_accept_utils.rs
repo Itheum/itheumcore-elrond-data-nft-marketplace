@@ -111,9 +111,15 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         fee_from_seller: BigUint,
         creator: ManagedAddress,
         creator_royalties: BigUint,
+        min_amount_for_seller: BigUint,
     ) {
         // If the creator setup royalties and is not the offer owner he can benefit the royalties
         if creator != seller && &creator_royalties > &BigUint::zero() {
+            require!(
+                &min_amount_for_seller
+                    <= &(&buyer_payment - &fee_from_buyer - &fee_from_seller - &creator_royalties),
+                "Minimum amount for seller not filled"
+            );
             self.send().direct(
                 &seller,
                 &payment_token.token_identifier,
@@ -161,6 +167,10 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                 ),
             }
         } else {
+            require!(
+                &min_amount_for_seller <= &(&buyer_payment - &fee_from_buyer - &fee_from_seller),
+                "Minimum amount for seller not filled"
+            );
             self.send().direct(
                 &seller,
                 &payment_token.token_identifier,
