@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           41
+// Endpoints:                           42
 // Async Callback (empty):               1
-// Total number of exported functions:  43
+// Total number of exported functions:  44
 
 #![no_std]
 #![feature(alloc_error_handler, lang_items)]
@@ -56,6 +56,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         viewPagedOffers
         getUserTotalOffers
         viewUserListedOffers
+        viewCancelledOffers
         viewOffers
         viewOffer
         numberOfOffers
