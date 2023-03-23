@@ -95,6 +95,19 @@ pub trait ViewsModule: crate::storage::StorageModule {
         offers
     }
 
+    #[view(viewCancelledOffers)]
+    fn view_cancelled_offers(&self, address: &ManagedAddress) -> ManagedVec<OfferOut<Self::Api>> {
+        let fee = self.percentage_cut_from_buyer().get();
+
+        let offers = self
+            .user_listed_offers(address)
+            .iter()
+            .map(|index| self.offer_to_offer_out(index, self.cancelled_offers(index).get(), &fee))
+            .collect::<ManagedVec<OfferOut<Self::Api>>>();
+
+        offers
+    }
+
     // View that returns specific offers by providing their indexes
     #[view(viewOffers)]
     fn view_offers(&self, indexes: MultiValueEncoded<u64>) -> ManagedVec<OfferOut<Self::Api>> {

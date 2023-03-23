@@ -1,6 +1,6 @@
 use crate::{
     claims::{self, ClaimType},
-    storage::OfferType,
+    storage::{Offer, OfferType},
 };
 
 multiversx_sc::imports!();
@@ -17,6 +17,12 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         } else {
             OfferType::PaymentOffer
         }
+    }
+
+    fn try_get_offer(&self, offer_id: u64) -> Offer<Self::Api> {
+        let offer_mapper = self.cancelled_offers(offer_id);
+        require!(!offer_mapper.is_empty(), "Offer does not exist");
+        offer_mapper.get()
     }
 
     // [TO DO] Generic method to check address has Genesis NFT staked

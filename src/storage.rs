@@ -14,7 +14,17 @@ pub struct Offer<M: ManagedTypeApi> {
     pub wanted_token: EgldOrEsdtTokenPayment<M>,
     pub quantity: BigUint<M>,
 }
-#[derive(ManagedVecItem, Clone, NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
+#[derive(
+    ManagedVecItem,
+    Clone,
+    NestedEncode,
+    NestedDecode,
+    TopEncode,
+    TopDecode,
+    TypeAbi,
+    Debug,
+    PartialEq,
+)]
 pub struct OfferOut<M: ManagedTypeApi> {
     pub offer_id: u64,
     pub owner: ManagedAddress<M>,
@@ -53,6 +63,10 @@ pub trait StorageModule {
     #[view(getOffers)]
     #[storage_mapper("offers")]
     fn offers(&self) -> MapMapper<u64, Offer<Self::Api>>;
+
+    #[view(getCancelledOffer)]
+    #[storage_mapper("cancelled_offers")]
+    fn cancelled_offers(&self, offer_id: u64) -> SingleValueMapper<Offer<Self::Api>>;
 
     #[view(getUserListedOffers)]
     #[storage_mapper("user_offers")]

@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           39
+// Endpoints:                           41
 // Async Callback (empty):               1
-// Total number of exported functions:  41
+// Total number of exported functions:  43
 
 #![no_std]
 #![feature(alloc_error_handler, lang_items)]
@@ -32,10 +32,12 @@ multiversx_sc_wasm_adapter::endpoints! {
         addOffer
         changeOfferPrice
         cancelOffer
+        whithdrawCancelledOffer
         acceptOffer
         setTreasuryAddress
         setAdministrator
         getOffers
+        getCancelledOffer
         getUserListedOffers
         getAcceptedTokens
         getAcceptedTokenPayments

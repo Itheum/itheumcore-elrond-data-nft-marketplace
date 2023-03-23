@@ -258,45 +258,68 @@ pub trait DataMarket:
 
     // Endpoint that will be callable by offer owner or contract owner to cancel an offer.
     #[endpoint(cancelOffer)]
-    fn cancel_offer(&self, offer_id: u64, quantity: BigUint) {
+    fn cancel_offer(&self, offer_id: u64, quantity: BigUint, send_funds_back: bool) {
         let offer_to_cancel = self.offers().get(&offer_id);
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
 
         match offer_to_cancel {
             Some(mut offer) => {
-                require!(offer.quantity >= quantity, "Quantity too high");
+                if send_funds_back {
+                    require!(offer.quantity >= quantity, "Quantity too high");
 
-                if &caller == &offer.owner {
-                    self.require_sc_ready_to_trade();
-                }
+                    if &caller == &offer.owner {
+                        self.require_sc_ready_to_trade();
+                    }
 
-                require!(
-                    &caller == &offer.owner
-                        || &caller == &sc_owner
-                        || &caller == &self.administrator().get(),
-                    "Only special addresses can cancel offers"
-                );
+                    require!(
+                        &caller == &offer.owner
+                            || &caller == &sc_owner
+                            || &caller == &self.administrator().get(),
+                        "Only special addresses can cancel offers"
+                    );
 
-                self.send().direct_esdt(
-                    &offer.owner,
-                    &offer.offered_token.token_identifier,
-                    offer.offered_token.token_nonce,
-                    &(&offer.offered_token.amount * &quantity),
-                );
+                    self.send().direct_esdt(
+                        &offer.owner,
+                        &offer.offered_token.token_identifier,
+                        offer.offered_token.token_nonce,
+                        &(&offer.offered_token.amount * &quantity),
+                    );
 
-                if offer.quantity == quantity {
-                    self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
-                    self.offers().remove(&offer_id);
+                    if offer.quantity == quantity {
+                        self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
+                        self.offers().remove(&offer_id);
+                    } else {
+                        offer.quantity -= quantity;
+                        self.offers().insert(offer_id, offer);
+                    }
+                    self.cancelled_offer_event(&offer_id);
                 } else {
-                    offer.quantity -= quantity;
-                    self.offers().insert(offer_id, offer);
+                    // doesn't take into account the quantity provided
+                    self.cancelled_offers(offer_id).set(offer);
+                    self.offers().remove(&offer_id);
                 }
-
-                self.cancelled_offer_event(&offer_id);
             }
             None => sc_panic!("Offer not found"),
         }
+    }
+
+    #[endpoint(whithdrawCancelledOffer)]
+    fn withdraw_from_cancelled_offer(&self, offer_id: u64) {
+        let caller = self.blockchain().get_caller();
+        let offer = self.try_get_offer(offer_id);
+        self.require_sc_ready_to_trade();
+        require!(caller == offer.owner, "Not offer owner");
+
+        self.send().direct_esdt(
+            &offer.owner,
+            &offer.offered_token.token_identifier,
+            offer.offered_token.token_nonce,
+            &(&offer.offered_token.amount * &offer.quantity),
+        );
+
+        self.user_listed_offers(&offer.owner).swap_remove(&offer_id); // after whitdraw, offer is no longer managed by the contract
+        self.cancelled_offers(offer_id).clear();
     }
 
     // Endpoint that will be callable by users to accept an offer.
