@@ -67,7 +67,7 @@ pub trait StorageModule {
 
     #[view(getCancelledOffer)]
     #[storage_mapper("cancelled_offers")]
-    fn cancelled_offers(&self, offer_id: u64) -> SingleValueMapper<Offer<Self::Api>>;
+    fn cancelled_offers(&self, address: &ManagedAddress) -> MapMapper<u64, Offer<Self::Api>>;
 
     #[view(getUserListedOffers)]
     #[storage_mapper("user_offers")]

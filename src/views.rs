@@ -100,9 +100,9 @@ pub trait ViewsModule: crate::storage::StorageModule {
         let fee = self.percentage_cut_from_buyer().get();
 
         let offers = self
-            .user_listed_offers(address)
+            .cancelled_offers(address)
             .iter()
-            .map(|index| self.offer_to_offer_out(index, self.cancelled_offers(index).get(), &fee))
+            .map(|(offer_id, offer)| self.offer_to_offer_out(offer_id, offer, &fee))
             .collect::<ManagedVec<OfferOut<Self::Api>>>();
 
         offers

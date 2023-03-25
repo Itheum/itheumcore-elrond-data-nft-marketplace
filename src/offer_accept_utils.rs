@@ -19,10 +19,13 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         }
     }
 
-    fn try_get_offer(&self, offer_id: u64) -> Offer<Self::Api> {
-        let offer_mapper = self.cancelled_offers(offer_id);
-        require!(!offer_mapper.is_empty(), "Offer does not exist");
-        offer_mapper.get()
+    fn try_get_cancelled_offer(&self, address: &ManagedAddress, offer_id: u64) -> Offer<Self::Api> {
+        let offer = self
+            .cancelled_offers(&address)
+            .get(&offer_id)
+            .unwrap_or_else(|| sc_panic!("Cancelled offer not found"));
+
+        offer
     }
 
     // [TO DO] Generic method to check address has Genesis NFT staked

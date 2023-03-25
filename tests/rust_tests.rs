@@ -1771,7 +1771,11 @@ fn cancel_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(sc.cancelled_offers(2u64).is_empty(), false);
+            assert_eq!(
+                sc.cancelled_offers(&managed_address!(second_user_address))
+                    .contains_key(&2u64),
+                true
+            );
 
             let correct_cancelled_offer: OfferOut<DebugApi> = OfferOut {
                 offer_id: 2u64,
@@ -1802,7 +1806,7 @@ fn cancel_offer_test() {
                 sc.withdraw_from_cancelled_offer(2u64);
             },
         )
-        .assert_user_error("Not offer owner");
+        .assert_user_error("Cancelled offer not found");
 
     b_wrapper
         .execute_tx(
@@ -1817,7 +1821,11 @@ fn cancel_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(sc.cancelled_offers(2u64).is_empty(), true);
+            assert_eq!(
+                sc.cancelled_offers(&managed_address!(second_user_address))
+                    .contains_key(&2u64),
+                false
+            );
             assert_eq!(
                 sc.user_listed_offers(&managed_address!(second_user_address))
                     .len(),
@@ -1833,8 +1841,216 @@ fn cancel_offer_test() {
         &rust_biguint!(0u64),
         Option::<&Empty>::None,
     );
-}
 
+    b_wrapper
+        .execute_esdt_transfer(
+            second_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            2,
+            &rust_biguint!(5u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(200u64),
+                    managed_biguint!(0),
+                    OptionalValue::Some(managed_biguint!(5u64)),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            let correct_offer: OfferOut<DebugApi> = OfferOut {
+                offer_id: 3u64,
+                owner: managed_address!(second_user_address),
+                offered_token_identifier: managed_token_id!(SFT_TICKER),
+                offered_token_nonce: 2u64,
+                offered_token_amount: managed_biguint!(1u64),
+                wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
+                wanted_token_nonce: 0u64,
+                wanted_token_amount: managed_biguint!(204u64),
+                quantity: managed_biguint!(5u64),
+            };
+
+            let view_offer = sc.view_offer(3u64).unwrap();
+
+            assert_eq!(correct_offer, view_offer);
+        })
+        .assert_ok();
+
+    b_wrapper.check_nft_balance(
+        &setup.contract_wrapper.address_ref(),
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(5u64),
+        Option::<&Empty>::None,
+    );
+
+    b_wrapper
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.cancel_offer(3u64, managed_biguint!(3u64), false);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper.check_nft_balance(
+        &setup.contract_wrapper.address_ref(),
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(5u64),
+        Option::<&Empty>::None,
+    );
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.cancelled_offers(&managed_address!(second_user_address))
+                    .contains_key(&3u64),
+                true
+            );
+
+            let correct_cancelled_offer: OfferOut<DebugApi> = OfferOut {
+                offer_id: 3u64,
+                owner: managed_address!(second_user_address),
+                offered_token_identifier: managed_token_id!(SFT_TICKER),
+                offered_token_nonce: 2u64,
+                offered_token_amount: managed_biguint!(1u64),
+                wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
+                wanted_token_nonce: 0u64,
+                wanted_token_amount: managed_biguint!(204u64),
+                quantity: managed_biguint!(3u64),
+            };
+
+            let correct_remaining_offer: OfferOut<DebugApi> = OfferOut {
+                offer_id: 3u64,
+                owner: managed_address!(second_user_address),
+                offered_token_identifier: managed_token_id!(SFT_TICKER),
+                offered_token_nonce: 2u64,
+                offered_token_amount: managed_biguint!(1u64),
+                wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
+                wanted_token_nonce: 0u64,
+                wanted_token_amount: managed_biguint!(204u64),
+                quantity: managed_biguint!(2u64),
+            };
+
+            let view_remained_offer = sc.view_offer(3u64).unwrap();
+
+            assert_eq!(view_remained_offer, correct_remaining_offer);
+
+            let view_cancelled_offer = sc
+                .view_cancelled_offers(&managed_address!(second_user_address))
+                .get(0);
+
+            assert_eq!(view_cancelled_offer, correct_cancelled_offer);
+        })
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            administrator_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.cancel_offer(3u64, managed_biguint!(3u64), false);
+            },
+        )
+        .assert_user_error("Quantity too high");
+
+    b_wrapper
+        .execute_tx(
+            owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.cancel_offer(3u64, managed_biguint!(2u64), false);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.cancelled_offers(&managed_address!(second_user_address))
+                    .contains_key(&3u64),
+                true
+            );
+
+            assert_eq!(
+                sc.cancelled_offers(&managed_address!(second_user_address))
+                    .len(),
+                1usize
+            );
+
+            let correct_cancelled_offer: OfferOut<DebugApi> = OfferOut {
+                offer_id: 3u64,
+                owner: managed_address!(second_user_address),
+                offered_token_identifier: managed_token_id!(SFT_TICKER),
+                offered_token_nonce: 2u64,
+                offered_token_amount: managed_biguint!(1u64),
+                wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
+                wanted_token_nonce: 0u64,
+                wanted_token_amount: managed_biguint!(204u64),
+                quantity: managed_biguint!(5u64),
+            };
+
+            let is_listed = sc
+                .user_listed_offers(&managed_address!(second_user_address))
+                .contains(&3u64);
+
+            assert_eq!(is_listed, false);
+
+            let view_cancelled_offer = sc
+                .view_cancelled_offers(&managed_address!(second_user_address))
+                .get(0);
+
+            assert_eq!(correct_cancelled_offer, view_cancelled_offer);
+        })
+        .assert_ok();
+
+    b_wrapper.check_nft_balance(
+        &setup.contract_wrapper.address_ref(),
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(5u64),
+        Option::<&Empty>::None,
+    );
+
+    b_wrapper
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.withdraw_from_cancelled_offer(3u64);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_query(&setup.contract_wrapper, |sc| {
+            assert_eq!(
+                sc.cancelled_offers(&managed_address!(second_user_address))
+                    .contains_key(&3u64),
+                false
+            );
+        })
+        .assert_ok();
+
+    b_wrapper.check_nft_balance(
+        &setup.contract_wrapper.address_ref(),
+        SFT_TICKER,
+        2u64,
+        &rust_biguint!(0u64),
+        Option::<&Empty>::None,
+    );
+}
 // [TO DO] Add test for acceptOffer
 
 #[test]

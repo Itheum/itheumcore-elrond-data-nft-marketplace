@@ -273,20 +273,17 @@ pub trait DataMarket:
 
         match offer_to_cancel {
             Some(mut offer) => {
+                require!(offer.quantity >= quantity, "Quantity too high");
+                require!(
+                    &caller == &offer.owner
+                        || &caller == &sc_owner
+                        || &caller == &self.administrator().get(),
+                    "Only special addresses can cancel offers"
+                );
+                if &caller == &offer.owner {
+                    self.require_sc_ready_to_trade();
+                }
                 if send_funds_back {
-                    require!(offer.quantity >= quantity, "Quantity too high");
-
-                    if &caller == &offer.owner {
-                        self.require_sc_ready_to_trade();
-                    }
-
-                    require!(
-                        &caller == &offer.owner
-                            || &caller == &sc_owner
-                            || &caller == &self.administrator().get(),
-                        "Only special addresses can cancel offers"
-                    );
-
                     self.send().direct_esdt(
                         &offer.owner,
                         &offer.offered_token.token_identifier,
@@ -303,10 +300,24 @@ pub trait DataMarket:
                     }
                     self.cancelled_offer_event(&offer_id);
                 } else {
-                    // doesn't take into account the quantity provided
-                    self.cancelled_offers(offer_id).set(offer);
-                    self.offers().remove(&offer_id);
-                    self.cancelled_offer_event(&offer_id);
+                    let mut cancelled_offer;
+                    if !self.cancelled_offers(&offer.owner).contains_key(&offer_id) {
+                        cancelled_offer = offer.clone();
+                        cancelled_offer.quantity = BigUint::zero();
+                    } else {
+                        cancelled_offer = self.try_get_cancelled_offer(&offer.owner, offer_id);
+                    }
+
+                    if offer.quantity == quantity {
+                        self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
+                        self.offers().remove(&offer_id);
+                    } else {
+                        offer.quantity -= &quantity; // update the offer quantity
+                        self.offers().insert(offer_id, offer);
+                    }
+                    cancelled_offer.quantity += quantity;
+                    self.cancelled_offers(&cancelled_offer.owner)
+                        .insert(offer_id, cancelled_offer);
                 }
             }
             None => sc_panic!("Offer not found"),
@@ -316,7 +327,7 @@ pub trait DataMarket:
     #[endpoint(whithdrawCancelledOffer)]
     fn withdraw_from_cancelled_offer(&self, offer_id: u64) {
         let caller = self.blockchain().get_caller();
-        let offer = self.try_get_offer(offer_id);
+        let offer = self.try_get_cancelled_offer(&caller, offer_id);
         self.require_sc_ready_to_trade();
         require!(caller == offer.owner, "Not offer owner");
 
@@ -327,9 +338,8 @@ pub trait DataMarket:
             &(&offer.offered_token.amount * &offer.quantity),
         );
 
-        self.user_listed_offers(&offer.owner).swap_remove(&offer_id); // after whithdraw, offer is no longer managed by the contract
         self.withdraw_cancelled_offer_event(&offer_id);
-        self.cancelled_offers(offer_id).clear();
+        self.cancelled_offers(&caller).remove(&offer_id);
     }
 
     // Endpoint that will be callable by users to accept an offer.
