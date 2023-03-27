@@ -78,7 +78,12 @@ pub trait EventsModule {
 
     // Emitted whenever an offer is cancelled
     #[event("cancelledOffer")]
-    fn cancelled_offer_event(&self, #[indexed] index: &u64);
+    fn cancelled_offer_event(
+        &self,
+        #[indexed] index: &u64,
+        #[indexed] quantity: &BigUint,
+        #[indexed] with_funds: bool,
+    );
 
     // Emitted whenever a cancelled offer withdrawn the tokens
     #[event("withdrawCancelledOffer")]

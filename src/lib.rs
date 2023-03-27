@@ -3,11 +3,27 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
+use crate::errors::ERR_CANNOT_ACCEPT_OWN_OFFER;
+use crate::errors::ERR_CONTRACT_ALREADY_INITLAIZED;
+use crate::errors::ERR_DISCOUNTS_HIGHER_THAN_PERCENTAGE_CUTS;
+use crate::errors::ERR_FEES_CANNOT_BE_LOWER_THAN_DISCOUNTS;
+use crate::errors::ERR_MIN_AMOUNT_TOO_HIGH;
+use crate::errors::ERR_NOT_ENOUGH_QUANTITY;
+use crate::errors::ERR_ONLY_OFFER_OWNER;
+use crate::errors::ERR_ONLY_SPECIAL_ADDRESS;
+use crate::errors::ERR_PAYMENT_FEE_TOO_HIGH;
+use crate::errors::ERR_QUANTITY_MUST_BE_A_DIVIZOR;
+use crate::errors::ERR_QUANTITY_MUST_BE_POSITIVE;
+use crate::errors::ERR_QUANTITY_TOO_HIGH;
+use crate::errors::ERR_TOKEN_NOT_ACCEPTED;
+use crate::errors::ERR_WRONG_TOKEN;
+use crate::errors::ERR_WRONG_TOKEN_AMOUNT;
 use crate::storage::DataNftAttributes;
 use crate::storage::Offer;
 use crate::storage::OfferType;
 
 pub mod claims;
+pub mod errors;
 pub mod events;
 pub mod offer_accept_utils;
 pub mod requirements;
@@ -26,17 +42,19 @@ pub trait DataMarket:
     fn init(&self) {
         self.is_paused().set(true);
 
-        self.pause_toggle_event(&true);
-        self.set_percentage_cuts_event(&BigUint::from(200u64), &BigUint::from(200u64));
         self.percentage_cut_from_buyer()
             .set_if_empty(BigUint::from(200u64));
         self.percentage_cut_from_seller()
             .set_if_empty(BigUint::from(200u64));
-        self.set_discounts_event(&BigUint::zero(), &BigUint::zero());
+
         self.discount_fee_percentage_buyer()
             .set_if_empty(BigUint::zero());
         self.discount_fee_percentage_seller()
             .set_if_empty(BigUint::zero());
+
+        self.pause_toggle_event(&true);
+        self.set_percentage_cuts_event(&BigUint::from(200u64), &BigUint::from(200u64));
+        self.set_discounts_event(&BigUint::zero(), &BigUint::zero());
     }
 
     // Endpoint that will be used by the contract owner to initialize the contract.
@@ -53,12 +71,14 @@ pub trait DataMarket:
             self.treasury_address().is_empty()
                 && self.accepted_payments().is_empty()
                 && self.accepted_tokens().is_empty(),
-            "Contract already initialized"
+            ERR_CONTRACT_ALREADY_INITLAIZED
         );
         self.set_accepted_token_event(&accepted_token_id);
         self.add_accepted_token(accepted_token_id);
+
         self.set_accepted_payment_event(&payment_token_id, &maximum_payment_fee);
         self.add_accepted_payment(payment_token_id, maximum_payment_fee);
+
         self.treasury_address_event(&treasury_address);
         self.set_treasury_address(treasury_address);
     }
@@ -71,7 +91,7 @@ pub trait DataMarket:
         require!(
             seller_discount <= self.percentage_cut_from_seller().get()
                 && buyer_discount <= self.percentage_cut_from_buyer().get(),
-            "Discounts cannot be higher than the fee percentage cuts"
+            ERR_DISCOUNTS_HIGHER_THAN_PERCENTAGE_CUTS
         );
         self.set_discounts_event(&seller_discount, &buyer_discount);
         self.discount_fee_percentage_buyer().set(&buyer_discount);
@@ -86,7 +106,7 @@ pub trait DataMarket:
         require!(
             seller_fee >= self.discount_fee_percentage_buyer().get()
                 && buyer_fee >= self.discount_fee_percentage_seller().get(),
-            "Fees cannot be lower than the discount percentage cuts"
+            ERR_FEES_CANNOT_BE_LOWER_THAN_DISCOUNTS
         );
         self.set_percentage_cuts_event(&seller_fee, &buyer_fee);
         self.percentage_cut_from_buyer().set(&buyer_fee);
@@ -175,37 +195,34 @@ pub trait DataMarket:
         let mut data_nft = self.call_value().single_esdt();
         require!(
             self.accepted_payments().contains_key(&payment_token_id),
-            "Token not accepted"
+            ERR_TOKEN_NOT_ACCEPTED
         );
         require!(
             self.accepted_tokens().contains(&data_nft.token_identifier),
-            "Token not accepted"
+            ERR_TOKEN_NOT_ACCEPTED
         );
 
         let existing_quantity = opt_quantity.into_option().unwrap_or(BigUint::from(1u64));
 
-        require!(existing_quantity > 0, "Quantity must be greater than 0");
-        require!(
-            data_nft.amount >= existing_quantity,
-            "Quantity must be less than offered token amount"
-        );
+        require!(existing_quantity > 0, ERR_QUANTITY_MUST_BE_POSITIVE);
+        require!(data_nft.amount >= existing_quantity, ERR_QUANTITY_TOO_HIGH);
 
         let maximum_fee = self.accepted_payments().get(&payment_token_id).unwrap();
 
         require!(
             &data_nft.amount % &existing_quantity == 0,
-            "Quantity must be a divisor of offered token amount"
+            ERR_QUANTITY_MUST_BE_A_DIVIZOR
         );
         data_nft.amount = &data_nft.amount / &existing_quantity;
 
         require!(
             payment_token_fee <= &maximum_fee * &data_nft.amount,
-            "Payment fee too high"
+            ERR_PAYMENT_FEE_TOO_HIGH
         );
 
         require!(
             min_amount_for_seller <= &payment_token_fee * &data_nft.amount,
-            "Min amount too high"
+            ERR_MIN_AMOUNT_TOO_HIGH
         );
 
         let payment_token =
@@ -231,96 +248,88 @@ pub trait DataMarket:
     fn change_offer_price(&self, offer_id: u64, new_fee: BigUint, min_amount_for_seller: BigUint) {
         self.require_sc_ready_to_trade();
         let caller = self.blockchain().get_caller();
-        let offer_to_change = self.offers().get(&offer_id);
-        match offer_to_change {
-            Some(mut offer) => {
-                require!(offer.owner == caller, "Only offer owner can change price");
+        let mut offer = self.try_get_offer(offer_id);
 
-                let token_identifier = offer.wanted_token.token_identifier;
-                let nonce = offer.wanted_token.token_nonce;
+        require!(offer.owner == caller, ERR_ONLY_OFFER_OWNER);
 
-                let maximum_fee = self.accepted_payments().get(&token_identifier);
-                match maximum_fee {
-                    Some(maximum_fee) => {
-                        require!(
-                            new_fee <= maximum_fee * &offer.offered_token.amount,
-                            "Payment fee too high"
-                        );
-                    }
-                    None => sc_panic!("Token not accepted"),
-                }
+        let token_identifier = offer.wanted_token.token_identifier;
+        let nonce = offer.wanted_token.token_nonce;
 
+        let maximum_fee = self.accepted_payments().get(&token_identifier);
+        match maximum_fee {
+            Some(maximum_fee) => {
                 require!(
-                    min_amount_for_seller <= &new_fee * &offer.offered_token.amount,
-                    "Min amount too high"
+                    new_fee <= maximum_fee * &offer.offered_token.amount,
+                    ERR_PAYMENT_FEE_TOO_HIGH
                 );
-                self.updated_offer_price_event(&offer_id, &new_fee);
-                let payment_token = EgldOrEsdtTokenPayment::new(token_identifier, nonce, new_fee);
-                offer.min_amount_for_seller = min_amount_for_seller;
-                offer.wanted_token = payment_token;
-                self.offers().insert(offer_id, offer);
             }
-            None => sc_panic!("Offer not found"),
+            None => sc_panic!(ERR_TOKEN_NOT_ACCEPTED),
         }
+
+        require!(
+            min_amount_for_seller <= &new_fee * &offer.offered_token.amount,
+            ERR_MIN_AMOUNT_TOO_HIGH
+        );
+        self.updated_offer_price_event(&offer_id, &new_fee);
+        let payment_token = EgldOrEsdtTokenPayment::new(token_identifier, nonce, new_fee);
+        offer.min_amount_for_seller = min_amount_for_seller;
+        offer.wanted_token = payment_token;
+        self.offers().insert(offer_id, offer);
     }
 
     // Endpoint that will be callable by offer owner or contract owner to cancel an offer.
     #[endpoint(cancelOffer)]
     fn cancel_offer(&self, offer_id: u64, quantity: BigUint, send_funds_back: bool) {
-        let offer_to_cancel = self.offers().get(&offer_id);
+        let mut offer = self.try_get_offer(offer_id);
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
 
-        match offer_to_cancel {
-            Some(mut offer) => {
-                require!(offer.quantity >= quantity, "Quantity too high");
-                require!(
-                    &caller == &offer.owner
-                        || &caller == &sc_owner
-                        || &caller == &self.administrator().get(),
-                    "Only special addresses can cancel offers"
-                );
-                if &caller == &offer.owner {
-                    self.require_sc_ready_to_trade();
-                }
-                if send_funds_back {
-                    self.send().direct_esdt(
-                        &offer.owner,
-                        &offer.offered_token.token_identifier,
-                        offer.offered_token.token_nonce,
-                        &(&offer.offered_token.amount * &quantity),
-                    );
+        require!(offer.quantity >= quantity, ERR_QUANTITY_TOO_HIGH);
+        require!(
+            &caller == &offer.owner
+                || &caller == &sc_owner
+                || &caller == &self.administrator().get(),
+            ERR_ONLY_SPECIAL_ADDRESS
+        );
+        if &caller == &offer.owner {
+            self.require_sc_ready_to_trade();
+        }
+        if send_funds_back {
+            self.send().direct_esdt(
+                &offer.owner,
+                &offer.offered_token.token_identifier,
+                offer.offered_token.token_nonce,
+                &(&offer.offered_token.amount * &quantity),
+            );
 
-                    if offer.quantity == quantity {
-                        self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
-                        self.offers().remove(&offer_id);
-                    } else {
-                        offer.quantity -= quantity;
-                        self.offers().insert(offer_id, offer);
-                    }
-                    self.cancelled_offer_event(&offer_id);
-                } else {
-                    let mut cancelled_offer;
-                    if !self.cancelled_offers(&offer.owner).contains_key(&offer_id) {
-                        cancelled_offer = offer.clone();
-                        cancelled_offer.quantity = BigUint::zero();
-                    } else {
-                        cancelled_offer = self.try_get_cancelled_offer(&offer.owner, offer_id);
-                    }
-
-                    if offer.quantity == quantity {
-                        self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
-                        self.offers().remove(&offer_id);
-                    } else {
-                        offer.quantity -= &quantity; // update the offer quantity
-                        self.offers().insert(offer_id, offer);
-                    }
-                    cancelled_offer.quantity += quantity;
-                    self.cancelled_offers(&cancelled_offer.owner)
-                        .insert(offer_id, cancelled_offer);
-                }
+            self.cancelled_offer_event(&offer_id, &quantity, send_funds_back);
+            if offer.quantity == quantity {
+                self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
+                self.offers().remove(&offer_id);
+            } else {
+                offer.quantity -= quantity;
+                self.offers().insert(offer_id, offer);
             }
-            None => sc_panic!("Offer not found"),
+        } else {
+            let mut cancelled_offer;
+            if !self.cancelled_offers(&offer.owner).contains_key(&offer_id) {
+                cancelled_offer = offer.clone();
+                cancelled_offer.quantity = BigUint::zero();
+            } else {
+                cancelled_offer = self.try_get_cancelled_offer(&offer.owner, offer_id);
+            }
+
+            if offer.quantity == quantity {
+                self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
+                self.offers().remove(&offer_id);
+            } else {
+                offer.quantity -= &quantity;
+                self.offers().insert(offer_id, offer);
+            }
+            self.cancelled_offer_event(&offer_id, &quantity, send_funds_back);
+            cancelled_offer.quantity += quantity;
+            self.cancelled_offers(&cancelled_offer.owner)
+                .insert(offer_id, cancelled_offer);
         }
     }
 
@@ -329,7 +338,7 @@ pub trait DataMarket:
         let caller = self.blockchain().get_caller();
         let offer = self.try_get_cancelled_offer(&caller, offer_id);
         self.require_sc_ready_to_trade();
-        require!(caller == offer.owner, "Not offer owner");
+        require!(caller == offer.owner, ERR_ONLY_OFFER_OWNER);
 
         self.send().direct_esdt(
             &offer.owner,
@@ -349,89 +358,80 @@ pub trait DataMarket:
         self.require_sc_ready_to_trade();
 
         let caller = self.blockchain().get_caller();
-        let offer_to_accept = self.offers().get(&offer_id);
+
+        let mut offer = self.try_get_offer(offer_id);
         let payment = self.call_value().egld_or_single_esdt();
 
-        match offer_to_accept {
-            Some(mut offer) => {
-                // SFT token data and attributes
-                let token_data = self.blockchain().get_esdt_token_data(
-                    &self.blockchain().get_sc_address(),
-                    &offer.offered_token.token_identifier,
-                    offer.offered_token.token_nonce,
-                );
-                // SFT token attributes
-                let token_attributes =
-                    token_data.decode_attributes::<DataNftAttributes<Self::Api>>();
+        // SFT token data and attributes
+        let token_data = self.blockchain().get_esdt_token_data(
+            &self.blockchain().get_sc_address(),
+            &offer.offered_token.token_identifier,
+            offer.offered_token.token_nonce,
+        );
+        // SFT token attributes
+        let token_attributes = token_data.decode_attributes::<DataNftAttributes<Self::Api>>();
 
-                require!(&caller != &offer.owner, "You cannot accept your own offer");
+        require!(&caller != &offer.owner, ERR_CANNOT_ACCEPT_OWN_OFFER);
 
-                let (buyer_has_discount, seller_has_discount) =
-                    self.check_traders_have_discount(&caller, &offer.owner);
+        let (buyer_has_discount, seller_has_discount) =
+            self.check_traders_have_discount(&caller, &offer.owner);
 
-                let (buyer_fee, seller_fee) =
-                    self.get_traders_fees(buyer_has_discount, seller_has_discount);
+        let (buyer_fee, seller_fee) =
+            self.get_traders_fees(buyer_has_discount, seller_has_discount);
 
-                require!(quantity <= offer.quantity, "Not enough quantity");
+        require!(quantity <= offer.quantity, ERR_NOT_ENOUGH_QUANTITY);
 
-                let offer_type = self.check_offer_type(&offer.wanted_token.amount);
+        let offer_type = self.check_offer_type(&offer.wanted_token.amount);
 
-                let (buyer_payment, creator_royalties, fee_from_buyer, fee_from_seller) = self
-                    .compute_fees(
-                        &offer.wanted_token.amount,
-                        &quantity,
-                        &buyer_fee,
-                        &seller_fee,
-                        &token_data.royalties,
-                        &offer_type,
-                    );
+        let (buyer_payment, creator_royalties, fee_from_buyer, fee_from_seller) = self
+            .compute_fees(
+                &offer.wanted_token.amount,
+                &quantity,
+                &buyer_fee,
+                &seller_fee,
+                &token_data.royalties,
+                &offer_type,
+            );
 
-                if offer_type == OfferType::PaymentOffer {
-                    require!(
-                        payment.token_identifier == offer.wanted_token.token_identifier,
-                        "Wrong token payment"
-                    );
-                    require!(
-                        payment.token_nonce == offer.wanted_token.token_nonce,
-                        "Wrong token payment"
-                    );
+        if offer_type == OfferType::PaymentOffer {
+            require!(
+                payment.token_identifier == offer.wanted_token.token_identifier,
+                ERR_WRONG_TOKEN
+            );
+            require!(
+                payment.token_nonce == offer.wanted_token.token_nonce,
+                ERR_WRONG_TOKEN
+            );
 
-                    require!(
-                        payment.amount == buyer_payment,
-                        "Wrong token payment amount"
-                    );
-                }
+            require!(payment.amount == buyer_payment, ERR_WRONG_TOKEN_AMOUNT);
+        }
 
-                self.accepted_offer_event(&offer_id, &caller, &quantity);
+        self.accepted_offer_event(&offer_id, &caller, &quantity);
 
-                let offered_token = offer.offered_token.clone();
-                let seller = offer.owner.clone();
-                let min_amount_for_seller = offer.min_amount_for_seller.clone();
+        let offered_token = offer.offered_token.clone();
+        let seller = offer.owner.clone();
+        let min_amount_for_seller = offer.min_amount_for_seller.clone();
 
-                self.distribute_tokens(
-                    payment,
-                    offered_token,
-                    &quantity,
-                    caller,
-                    buyer_payment,
-                    fee_from_buyer,
-                    seller,
-                    fee_from_seller,
-                    token_attributes.creator,
-                    creator_royalties,
-                    min_amount_for_seller,
-                );
+        self.distribute_tokens(
+            payment,
+            offered_token,
+            &quantity,
+            caller,
+            buyer_payment,
+            fee_from_buyer,
+            seller,
+            fee_from_seller,
+            token_attributes.creator,
+            creator_royalties,
+            min_amount_for_seller,
+        );
 
-                if offer.quantity == quantity {
-                    self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
-                    self.offers().remove(&offer_id);
-                } else {
-                    offer.quantity -= quantity;
-                    self.offers().insert(offer_id, offer);
-                }
-            }
-
-            None => sc_panic!("Offer not found"),
+        if offer.quantity == quantity {
+            self.user_listed_offers(&offer.owner).swap_remove(&offer_id);
+            self.offers().remove(&offer_id);
+        } else {
+            offer.quantity -= quantity;
+            self.offers().insert(offer_id, offer);
         }
     }
 

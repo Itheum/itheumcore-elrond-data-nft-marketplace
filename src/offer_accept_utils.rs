@@ -1,5 +1,6 @@
 use crate::{
     claims::{self, ClaimType},
+    errors::{ERR_MIN_AMOUNT_NOT_FILLED, ERR_OFFER_NOT_FOUND},
     storage::{Offer, OfferType},
 };
 
@@ -23,7 +24,16 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         let offer = self
             .cancelled_offers(&address)
             .get(&offer_id)
-            .unwrap_or_else(|| sc_panic!("Cancelled offer not found"));
+            .unwrap_or_else(|| sc_panic!(ERR_OFFER_NOT_FOUND));
+
+        offer
+    }
+
+    fn try_get_offer(&self, offer_id: u64) -> Offer<Self::Api> {
+        let offer = self
+            .offers()
+            .get(&offer_id)
+            .unwrap_or_else(|| sc_panic!(ERR_OFFER_NOT_FOUND));
 
         offer
     }
@@ -121,7 +131,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
             require!(
                 &min_amount_for_seller
                     <= &(&buyer_payment - &fee_from_buyer - &fee_from_seller - &creator_royalties),
-                "Minimum amount for seller not filled"
+                ERR_MIN_AMOUNT_NOT_FILLED
             );
             self.send().direct(
                 &seller,
@@ -172,7 +182,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         } else {
             require!(
                 &min_amount_for_seller <= &(&buyer_payment - &fee_from_buyer - &fee_from_seller),
-                "Minimum amount for seller not filled"
+                ERR_MIN_AMOUNT_NOT_FILLED
             );
             self.send().direct(
                 &seller,

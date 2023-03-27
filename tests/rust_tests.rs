@@ -1410,7 +1410,7 @@ fn add_offer_test() {
                 );
             },
         )
-        .assert_user_error("Quantity must be less than offered token amount");
+        .assert_user_error("Quantity too high");
 
     b_wrapper
         .execute_esdt_transfer(
@@ -1670,7 +1670,7 @@ fn cancel_offer_test() {
                 sc.cancel_offer(1u64, managed_biguint!(1u64), true);
             },
         )
-        .assert_user_error("Only special addresses can cancel offers");
+        .assert_user_error("Only special address can call this method");
 
     b_wrapper
         .execute_tx(
@@ -1806,7 +1806,7 @@ fn cancel_offer_test() {
                 sc.withdraw_from_cancelled_offer(2u64);
             },
         )
-        .assert_user_error("Cancelled offer not found");
+        .assert_user_error("Offer not found");
 
     b_wrapper
         .execute_tx(
@@ -2166,7 +2166,7 @@ fn accept_offer_test() {
                 sc.accept_offer(1u64, managed_biguint!(4u64));
             },
         )
-        .assert_user_error("You cannot accept your own offer");
+        .assert_user_error("Cannot accept own offer");
 
     b_wrapper
         .execute_esdt_transfer(
@@ -2205,7 +2205,7 @@ fn accept_offer_test() {
                 sc.accept_offer(1u64, managed_biguint!(1u64));
             },
         )
-        .assert_user_error("Wrong token payment amount");
+        .assert_user_error("Wrong token amount");
 
     b_wrapper
         .execute_esdt_transfer(
@@ -2233,7 +2233,7 @@ fn accept_offer_test() {
                 sc.accept_offer(1u64, managed_biguint!(1u64));
             },
         )
-        .assert_user_error("Minimum amount for seller not filled");
+        .assert_user_error("Min amount not filled");
 
     b_wrapper
         .execute_tx(

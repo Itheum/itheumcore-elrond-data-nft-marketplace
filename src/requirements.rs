@@ -1,3 +1,5 @@
+use crate::errors::{ERR_ADDRESS_NOT_PRIVILEGED, ERR_MARKETPLACE_NOT_READY};
+
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
@@ -9,11 +11,11 @@ pub trait RequirementsModule: crate::storage::StorageModule {
         if &self.blockchain().get_owner_address() != address {
             require!(
                 !&self.administrator().is_empty(),
-                "Address is not privileged"
+                ERR_ADDRESS_NOT_PRIVILEGED
             );
             require!(
                 &self.administrator().get() == address,
-                "Address is not privileged"
+                ERR_ADDRESS_NOT_PRIVILEGED
             );
         }
     }
@@ -41,6 +43,6 @@ pub trait RequirementsModule: crate::storage::StorageModule {
         if self.is_paused().get() {
             is_ready = false;
         }
-        require!(is_ready, "Marketplace trade is not ready");
+        require!(is_ready, ERR_MARKETPLACE_NOT_READY);
     }
 }
