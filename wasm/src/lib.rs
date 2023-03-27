@@ -52,14 +52,14 @@ multiversx_sc_wasm_adapter::endpoints! {
         getRoyaltiesClaimToken
         getAdministrator
         getClaimIsEnabled
-        getRequirements
+        viewRequirements
         viewPagedOffers
-        getUserTotalOffers
+        viewUserTotalOffers
         viewUserListedOffers
         viewCancelledOffers
         viewOffers
         viewOffer
-        numberOfOffers
+        viewNumberOfOffers
     )
 }
 

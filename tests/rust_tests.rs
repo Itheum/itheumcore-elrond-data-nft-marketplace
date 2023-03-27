@@ -413,8 +413,7 @@ fn initialize_contract_test() {
         .assert_user_error("Contract already initialized");
 }
 
-// [TO DO] Requirements test
-#[test]
+#[test] // Tests all the requires used in the contract
 fn requirements_test() {
     let mut setup = setup_contract(data_market::contract_obj);
     let b_wrapper = &mut setup.blockchain_wrapper;
@@ -1530,8 +1529,7 @@ fn add_offer_test() {
         .assert_ok();
 }
 
-// [TO DO] Add test for cancelOffer
-#[test]
+#[test] // Tests the offer cancelling feature
 fn cancel_offer_test() {
     let mut setup = setup_contract(data_market::contract_obj);
     let b_wrapper = &mut setup.blockchain_wrapper;
@@ -2060,9 +2058,8 @@ fn cancel_offer_test() {
         Option::<&Empty>::None,
     );
 }
-// [TO DO] Add test for acceptOffer
 
-#[test]
+#[test] // Tests whether the user can accept an offer
 fn accept_offer_test() {
     let mut setup = setup_contract(data_market::contract_obj);
     let b_wrapper = &mut setup.blockchain_wrapper;
@@ -2629,8 +2626,8 @@ fn accept_offer_test() {
         }),
     );
 }
-// [TO DO] Add test to accept offer with non accepted royalties token identifier
-#[test]
+
+#[test] // Tests whether the user gets the royaties tokens but not in the claims contract
 fn accept_offer_non_accepted_royalties_token_id_test() {
     let mut setup = setup_contract(data_market::contract_obj);
     let b_wrapper = &mut setup.blockchain_wrapper;
@@ -2872,8 +2869,7 @@ fn accept_offer_non_accepted_royalties_token_id_test() {
     assert_eq!(claims_contract_balance, rust_biguint!(0u64)); // no royalties were sent to the claims contract
 }
 
-// [TO DO] Add test for views
-#[test]
+#[test] // Tests whether the views work as expected
 fn views_test() {
     let mut setup = setup_contract(data_market::contract_obj);
     let b_wrapper = &mut setup.blockchain_wrapper;
