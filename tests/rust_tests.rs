@@ -1770,31 +1770,34 @@ fn cancel_offer_test() {
         .assert_ok();
 
     b_wrapper
-        .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(
-                sc.cancelled_offers(&managed_address!(second_user_address))
-                    .contains_key(&2u64),
-                true
-            );
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                assert_eq!(
+                    sc.cancelled_offers(&managed_address!(second_user_address))
+                        .contains_key(&2u64),
+                    true
+                );
 
-            let correct_cancelled_offer: OfferOut<DebugApi> = OfferOut {
-                offer_id: 2u64,
-                owner: managed_address!(second_user_address),
-                offered_token_identifier: managed_token_id!(SFT_TICKER),
-                offered_token_nonce: 2u64,
-                offered_token_amount: managed_biguint!(5u64),
-                wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
-                wanted_token_nonce: 0u64,
-                wanted_token_amount: managed_biguint!(204u64),
-                quantity: managed_biguint!(1u64),
-            };
+                let correct_cancelled_offer: OfferOut<DebugApi> = OfferOut {
+                    offer_id: 2u64,
+                    owner: managed_address!(second_user_address),
+                    offered_token_identifier: managed_token_id!(SFT_TICKER),
+                    offered_token_nonce: 2u64,
+                    offered_token_amount: managed_biguint!(5u64),
+                    wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
+                    wanted_token_nonce: 0u64,
+                    wanted_token_amount: managed_biguint!(204u64),
+                    quantity: managed_biguint!(1u64),
+                };
 
-            let view_cancelled_offer = sc
-                .view_cancelled_offers(&managed_address!(second_user_address))
-                .get(0);
+                let view_cancelled_offer = sc.view_cancelled_offers().get(0);
 
-            assert_eq!(view_cancelled_offer, correct_cancelled_offer);
-        })
+                assert_eq!(view_cancelled_offer, correct_cancelled_offer);
+            },
+        )
         .assert_ok();
 
     b_wrapper
@@ -1909,47 +1912,50 @@ fn cancel_offer_test() {
     );
 
     b_wrapper
-        .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(
-                sc.cancelled_offers(&managed_address!(second_user_address))
-                    .contains_key(&3u64),
-                true
-            );
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                assert_eq!(
+                    sc.cancelled_offers(&managed_address!(second_user_address))
+                        .contains_key(&3u64),
+                    true
+                );
 
-            let correct_cancelled_offer: OfferOut<DebugApi> = OfferOut {
-                offer_id: 3u64,
-                owner: managed_address!(second_user_address),
-                offered_token_identifier: managed_token_id!(SFT_TICKER),
-                offered_token_nonce: 2u64,
-                offered_token_amount: managed_biguint!(1u64),
-                wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
-                wanted_token_nonce: 0u64,
-                wanted_token_amount: managed_biguint!(204u64),
-                quantity: managed_biguint!(3u64),
-            };
+                let correct_cancelled_offer: OfferOut<DebugApi> = OfferOut {
+                    offer_id: 3u64,
+                    owner: managed_address!(second_user_address),
+                    offered_token_identifier: managed_token_id!(SFT_TICKER),
+                    offered_token_nonce: 2u64,
+                    offered_token_amount: managed_biguint!(1u64),
+                    wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
+                    wanted_token_nonce: 0u64,
+                    wanted_token_amount: managed_biguint!(204u64),
+                    quantity: managed_biguint!(3u64),
+                };
 
-            let correct_remaining_offer: OfferOut<DebugApi> = OfferOut {
-                offer_id: 3u64,
-                owner: managed_address!(second_user_address),
-                offered_token_identifier: managed_token_id!(SFT_TICKER),
-                offered_token_nonce: 2u64,
-                offered_token_amount: managed_biguint!(1u64),
-                wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
-                wanted_token_nonce: 0u64,
-                wanted_token_amount: managed_biguint!(204u64),
-                quantity: managed_biguint!(2u64),
-            };
+                let correct_remaining_offer: OfferOut<DebugApi> = OfferOut {
+                    offer_id: 3u64,
+                    owner: managed_address!(second_user_address),
+                    offered_token_identifier: managed_token_id!(SFT_TICKER),
+                    offered_token_nonce: 2u64,
+                    offered_token_amount: managed_biguint!(1u64),
+                    wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
+                    wanted_token_nonce: 0u64,
+                    wanted_token_amount: managed_biguint!(204u64),
+                    quantity: managed_biguint!(2u64),
+                };
 
-            let view_remained_offer = sc.view_offer(3u64).unwrap();
+                let view_remained_offer = sc.view_offer(3u64).unwrap();
 
-            assert_eq!(view_remained_offer, correct_remaining_offer);
+                assert_eq!(view_remained_offer, correct_remaining_offer);
 
-            let view_cancelled_offer = sc
-                .view_cancelled_offers(&managed_address!(second_user_address))
-                .get(0);
+                let view_cancelled_offer = sc.view_cancelled_offers().get(0);
 
-            assert_eq!(view_cancelled_offer, correct_cancelled_offer);
-        })
+                assert_eq!(view_cancelled_offer, correct_cancelled_offer);
+            },
+        )
         .assert_ok();
 
     b_wrapper
@@ -1975,43 +1981,46 @@ fn cancel_offer_test() {
         .assert_ok();
 
     b_wrapper
-        .execute_query(&setup.contract_wrapper, |sc| {
-            assert_eq!(
-                sc.cancelled_offers(&managed_address!(second_user_address))
-                    .contains_key(&3u64),
-                true
-            );
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                assert_eq!(
+                    sc.cancelled_offers(&managed_address!(second_user_address))
+                        .contains_key(&3u64),
+                    true
+                );
 
-            assert_eq!(
-                sc.cancelled_offers(&managed_address!(second_user_address))
-                    .len(),
-                1usize
-            );
+                assert_eq!(
+                    sc.cancelled_offers(&managed_address!(second_user_address))
+                        .len(),
+                    1usize
+                );
 
-            let correct_cancelled_offer: OfferOut<DebugApi> = OfferOut {
-                offer_id: 3u64,
-                owner: managed_address!(second_user_address),
-                offered_token_identifier: managed_token_id!(SFT_TICKER),
-                offered_token_nonce: 2u64,
-                offered_token_amount: managed_biguint!(1u64),
-                wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
-                wanted_token_nonce: 0u64,
-                wanted_token_amount: managed_biguint!(204u64),
-                quantity: managed_biguint!(5u64),
-            };
+                let correct_cancelled_offer: OfferOut<DebugApi> = OfferOut {
+                    offer_id: 3u64,
+                    owner: managed_address!(second_user_address),
+                    offered_token_identifier: managed_token_id!(SFT_TICKER),
+                    offered_token_nonce: 2u64,
+                    offered_token_amount: managed_biguint!(1u64),
+                    wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
+                    wanted_token_nonce: 0u64,
+                    wanted_token_amount: managed_biguint!(204u64),
+                    quantity: managed_biguint!(5u64),
+                };
 
-            let is_listed = sc
-                .user_listed_offers(&managed_address!(second_user_address))
-                .contains(&3u64);
+                let is_listed = sc
+                    .user_listed_offers(&managed_address!(second_user_address))
+                    .contains(&3u64);
 
-            assert_eq!(is_listed, false);
+                assert_eq!(is_listed, false);
 
-            let view_cancelled_offer = sc
-                .view_cancelled_offers(&managed_address!(second_user_address))
-                .get(0);
+                let view_cancelled_offer = sc.view_cancelled_offers().get(0);
 
-            assert_eq!(correct_cancelled_offer, view_cancelled_offer);
-        })
+                assert_eq!(correct_cancelled_offer, view_cancelled_offer);
+            },
+        )
         .assert_ok();
 
     b_wrapper.check_nft_balance(
@@ -3102,6 +3111,17 @@ fn views_test() {
         .assert_ok();
 
     b_wrapper
+        .execute_tx(
+            &first_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                assert_eq!(sc.view_user_total_offers(), 1usize);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
             let offer_mock_1 = OfferOut::<DebugApi> {
                 offer_id: 1u64,
@@ -3221,11 +3241,6 @@ fn views_test() {
 
             assert_eq!(offers_2.len(), 1usize);
 
-            assert_eq!(
-                sc.view_user_total_offers(&managed_address!(first_user_address)),
-                1usize
-            );
-
             let mut multi_values = MultiValueEncoded::new();
             multi_values.push(1u64);
             multi_values.push(2u64);
@@ -3287,66 +3302,57 @@ fn views_test() {
                 offer_mock_2.wanted_token_amount
             );
             assert_eq!(offers_3.get(1usize).quantity, offer_mock_2.quantity);
-
-            let offers_4 = sc.view_user_listed_offers(&managed_address!(first_user_address));
-
-            assert_eq!(offers_4.get(0usize).offer_id, offer_mock_1.offer_id);
-            assert_eq!(offers_4.get(0usize).owner, offer_mock_1.owner);
-            assert_eq!(
-                offers_4.get(0usize).offered_token_identifier,
-                offer_mock_1.offered_token_identifier
-            );
-            assert_eq!(
-                offers_4.get(0usize).offered_token_nonce,
-                offer_mock_1.offered_token_nonce
-            );
-            assert_eq!(
-                offers_4.get(0usize).offered_token_amount,
-                offer_mock_1.offered_token_amount
-            );
-            assert_eq!(
-                offers_4.get(0usize).wanted_token_identifier,
-                offer_mock_1.wanted_token_identifier
-            );
-            assert_eq!(
-                offers_4.get(0usize).wanted_token_nonce,
-                offer_mock_1.wanted_token_nonce
-            );
-            assert_eq!(
-                offers_4.get(0usize).wanted_token_amount,
-                offer_mock_1.wanted_token_amount
-            );
-            assert_eq!(offers_4.get(0usize).quantity, offer_mock_1.quantity);
-
-            let offers_5 = sc.view_user_listed_offers(&managed_address!(second_user_address));
-            assert_eq!(offers_5.get(0usize).offer_id, offer_mock_2.offer_id);
-            assert_eq!(offers_5.get(0usize).owner, offer_mock_2.owner);
-            assert_eq!(
-                offers_5.get(0usize).offered_token_identifier,
-                offer_mock_2.offered_token_identifier
-            );
-            assert_eq!(
-                offers_5.get(0usize).offered_token_nonce,
-                offer_mock_2.offered_token_nonce
-            );
-            assert_eq!(
-                offers_5.get(0usize).offered_token_amount,
-                offer_mock_2.offered_token_amount
-            );
-            assert_eq!(
-                offers_5.get(0usize).wanted_token_identifier,
-                offer_mock_2.wanted_token_identifier
-            );
-            assert_eq!(
-                offers_5.get(0usize).wanted_token_nonce,
-                offer_mock_2.wanted_token_nonce
-            );
-            assert_eq!(
-                offers_5.get(0usize).wanted_token_amount,
-                offer_mock_2.wanted_token_amount
-            );
-            assert_eq!(offers_5.get(0usize).quantity, offer_mock_2.quantity);
         })
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            first_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                let offer_mock_1 = OfferOut::<DebugApi> {
+                    offer_id: 1u64,
+                    owner: managed_address!(first_user_address),
+                    offered_token_identifier: managed_token_id!(SFT_TICKER),
+                    offered_token_nonce: 1u64,
+                    offered_token_amount: managed_biguint!(10u64),
+                    wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
+                    wanted_token_nonce: 0u64,
+                    wanted_token_amount: managed_biguint!(204u64),
+                    quantity: managed_biguint!(1u64),
+                };
+
+                let offers_4 = sc.view_user_listed_offers();
+
+                assert_eq!(offers_4.get(0usize), offer_mock_1);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                let offer_mock_2 = OfferOut::<DebugApi> {
+                    offer_id: 2u64,
+                    owner: managed_address!(second_user_address),
+                    offered_token_identifier: managed_token_id!(SFT_TICKER),
+                    offered_token_nonce: 2u64,
+                    offered_token_amount: managed_biguint!(5u64),
+                    wanted_token_identifier: managed_token_id_wrapped!(TOKEN_ID),
+                    wanted_token_nonce: 0u64,
+                    wanted_token_amount: managed_biguint!(204u64),
+                    quantity: managed_biguint!(4u64),
+                };
+
+                let offers_5 = sc.view_user_listed_offers();
+
+                assert_eq!(offers_5.get(0usize), offer_mock_2);
+            },
+        )
         .assert_ok();
 
     b_wrapper

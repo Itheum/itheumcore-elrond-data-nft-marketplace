@@ -9,7 +9,7 @@ use crate::{
 #[multiversx_sc::module]
 pub trait ViewsModule: crate::storage::StorageModule {
     // View that returns the requirements for the marketplace
-    #[view(getRequirements)]
+    #[view(viewRequirements)]
     fn view_requirements(&self) -> MarketPlaceRequirements<Self::Api> {
         let accepted_tokens = self
             .accepted_tokens()
@@ -42,13 +42,13 @@ pub trait ViewsModule: crate::storage::StorageModule {
 
         match opt_address.clone() {
             OptionalValue::Some(address) => {
-                for index in self.user_listed_offers(&address).iter() {
+                for offer_id in self.user_listed_offers(&address).iter() {
                     if nr >= from {
                         if nr <= to {
-                            let opt_offer = self.offers().get(&index);
+                            let opt_offer = self.offers().get(&offer_id);
                             match opt_offer {
                                 Option::Some(offer) => {
-                                    offers.push(self.offer_to_offer_out(index, offer, &fee));
+                                    offers.push(self.offer_to_offer_out(offer_id, offer, &fee));
                                 }
                                 Option::None => {}
                             }
@@ -60,10 +60,10 @@ pub trait ViewsModule: crate::storage::StorageModule {
                 }
             }
             OptionalValue::None => {
-                for (index, offer) in self.offers().iter() {
+                for (offer_id, offer) in self.offers().iter() {
                     if nr >= from {
                         if nr <= to {
-                            offers.push(self.offer_to_offer_out(index, offer, &fee));
+                            offers.push(self.offer_to_offer_out(offer_id, offer, &fee));
                         } else {
                             break;
                         }
@@ -75,32 +75,35 @@ pub trait ViewsModule: crate::storage::StorageModule {
         offers
     }
 
-    #[view(getUserTotalOffers)]
-    fn view_user_total_offers(&self, address: &ManagedAddress) -> usize {
+    #[view(viewUserTotalOffers)]
+    fn view_user_total_offers(&self) -> usize {
+        let address = self.blockchain().get_caller();
         self.user_listed_offers(&address).len()
     }
 
     #[view(viewUserListedOffers)]
-    fn view_user_listed_offers(&self, address: &ManagedAddress) -> ManagedVec<OfferOut<Self::Api>> {
-        let indexes = self
+    fn view_user_listed_offers(&self) -> ManagedVec<OfferOut<Self::Api>> {
+        let address = self.blockchain().get_caller();
+        let offer_ides = self
             .user_listed_offers(&address)
             .iter()
             .collect::<ManagedVec<u64>>();
 
-        let offers = indexes
+        let offers = offer_ides
             .into_iter()
-            .flat_map(|index| self.view_offer(index))
+            .flat_map(|offer_id| self.view_offer(offer_id))
             .collect::<ManagedVec<OfferOut<Self::Api>>>();
 
         offers
     }
 
     #[view(viewCancelledOffers)]
-    fn view_cancelled_offers(&self, address: &ManagedAddress) -> ManagedVec<OfferOut<Self::Api>> {
+    fn view_cancelled_offers(&self) -> ManagedVec<OfferOut<Self::Api>> {
+        let address = self.blockchain().get_caller();
         let fee = self.percentage_cut_from_buyer().get();
 
         let offers = self
-            .cancelled_offers(address)
+            .cancelled_offers(&address)
             .iter()
             .map(|(offer_id, offer)| self.offer_to_offer_out(offer_id, offer, &fee))
             .collect::<ManagedVec<OfferOut<Self::Api>>>();
@@ -108,30 +111,30 @@ pub trait ViewsModule: crate::storage::StorageModule {
         offers
     }
 
-    // View that returns specific offers by providing their indexes
+    // View that returns specific offers by providing their offer_ids
     #[view(viewOffers)]
-    fn view_offers(&self, indexes: MultiValueEncoded<u64>) -> ManagedVec<OfferOut<Self::Api>> {
-        let offers = indexes
+    fn view_offers(&self, offer_ids: MultiValueEncoded<u64>) -> ManagedVec<OfferOut<Self::Api>> {
+        let offers = offer_ids
             .into_iter()
-            .flat_map(|index| self.view_offer(index))
+            .flat_map(|offer_id| self.view_offer(offer_id))
             .collect::<ManagedVec<OfferOut<Self::Api>>>();
         offers
     }
 
     // View that returns a specific offer
     #[view(viewOffer)]
-    fn view_offer(&self, index: u64) -> Option<OfferOut<Self::Api>> {
-        let offer = self.offers().get(&index);
+    fn view_offer(&self, offer_id: u64) -> Option<OfferOut<Self::Api>> {
+        let offer = self.offers().get(&offer_id);
         let fee = self.percentage_cut_from_buyer().get();
         if let Some(offer) = offer {
-            Some(self.offer_to_offer_out(index, offer, &fee))
+            Some(self.offer_to_offer_out(offer_id, offer, &fee))
         } else {
             None
         }
     }
 
     // View that returns the number of offers
-    #[view(numberOfOffers)]
+    #[view(viewNumberOfOffers)]
     fn view_number_of_offers(&self) -> usize {
         self.offers().len()
     }
