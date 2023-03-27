@@ -84,6 +84,7 @@ pub trait ViewsModule: crate::storage::StorageModule {
     #[view(viewUserListedOffers)]
     fn view_user_listed_offers(&self) -> ManagedVec<OfferOut<Self::Api>> {
         let address = self.blockchain().get_caller();
+
         let offer_ids = self
             .user_listed_offers(&address)
             .iter()
