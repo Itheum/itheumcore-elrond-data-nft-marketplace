@@ -167,7 +167,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                         );
 
                         self.claims_proxy(self.claims_address().get())
-                            .add_claim(&creator, ClaimType::Royalties)
+                            .add_claim(&creator, ClaimType::Royalty)
                             .with_esdt_transfer(claim_payment)
                             .transfer_execute();
                     }
