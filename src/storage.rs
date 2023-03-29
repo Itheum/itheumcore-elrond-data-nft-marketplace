@@ -105,7 +105,6 @@ pub trait StorageModule {
     #[storage_mapper("pause")]
     fn is_paused(&self) -> SingleValueMapper<bool>;
 
-    // Stores the treasury address
     #[view(getTreasuryAddress)]
     #[storage_mapper("treasury_address")]
     fn treasury_address(&self) -> SingleValueMapper<ManagedAddress>;
@@ -118,7 +117,6 @@ pub trait StorageModule {
     #[storage_mapper("royalties_accepted_token")]
     fn royalties_claim_token(&self) -> SingleValueMapper<TokenIdentifier>;
 
-    // Stores admin address
     #[view(getAdministrator)]
     #[storage_mapper("administrator")]
     fn administrator(&self) -> SingleValueMapper<ManagedAddress>;

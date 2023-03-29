@@ -12,7 +12,7 @@ use crate::errors::ERR_NOT_ENOUGH_QUANTITY;
 use crate::errors::ERR_ONLY_OFFER_OWNER;
 use crate::errors::ERR_ONLY_SPECIAL_ADDRESS;
 use crate::errors::ERR_PAYMENT_FEE_TOO_HIGH;
-use crate::errors::ERR_QUANTITY_MUST_BE_A_DIVIZOR;
+use crate::errors::ERR_QUANTITY_MUST_BE_A_DIVISOR;
 use crate::errors::ERR_QUANTITY_MUST_BE_POSITIVE;
 use crate::errors::ERR_QUANTITY_TOO_HIGH;
 use crate::errors::ERR_TOKEN_NOT_ACCEPTED;
@@ -211,7 +211,7 @@ pub trait DataMarket:
 
         require!(
             &data_nft.amount % &existing_quantity == 0,
-            ERR_QUANTITY_MUST_BE_A_DIVIZOR
+            ERR_QUANTITY_MUST_BE_A_DIVISOR
         );
         data_nft.amount = &data_nft.amount / &existing_quantity;
 

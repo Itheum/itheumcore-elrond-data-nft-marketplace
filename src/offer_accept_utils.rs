@@ -38,17 +38,14 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         offer
     }
 
-    // [TO DO] Generic method to check address has Genesis NFT staked
     fn check_traders_have_discount(
         &self,
         buyer_address: &ManagedAddress,
         seller_address: &ManagedAddress,
     ) -> (bool, bool) {
-        // [TO DO] Generic method to check address has Genesis NFT staked
         let buyer_discount: bool;
         let seller_discount: bool;
-        // [TO DO] delete after the Genesis Nft staked check is implemented
-        //------- Implemented for the sake of testing
+
         if self.discount_fee_percentage_buyer().get() != BigUint::zero() {
             buyer_discount = true;
         } else {
@@ -59,7 +56,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         } else {
             seller_discount = false;
         }
-        //-------
+
         (buyer_discount, seller_discount)
     }
 

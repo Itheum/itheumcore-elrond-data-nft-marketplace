@@ -6,7 +6,7 @@ pub const ERR_FEES_CANNOT_BE_LOWER_THAN_DISCOUNTS: &str =
 pub const ERR_TOKEN_NOT_ACCEPTED: &str = "Token not accepted";
 pub const ERR_QUANTITY_MUST_BE_POSITIVE: &str = "Quantity must be greater than 0";
 pub const ERR_QUANTITY_TOO_HIGH: &str = "Quantity too high";
-pub const ERR_QUANTITY_MUST_BE_A_DIVIZOR: &str =
+pub const ERR_QUANTITY_MUST_BE_A_DIVISOR: &str =
     "Quantity must be a divisor of offered token amount";
 pub const ERR_PAYMENT_FEE_TOO_HIGH: &str = "Payment fee too high";
 pub const ERR_MIN_AMOUNT_TOO_HIGH: &str = "Min amount too high";
