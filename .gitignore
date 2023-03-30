@@ -21,7 +21,7 @@ output*
 *.pem
 interaction/deploy-devnet.interaction.json
 erdpy.data-storage.json
-coverage.sh
+
 
 *.pem
 .DS_Store

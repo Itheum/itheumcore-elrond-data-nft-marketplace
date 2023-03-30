@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           38
+// Endpoints:                           42
 // Async Callback (empty):               1
-// Total number of exported functions:  40
+// Total number of exported functions:  44
 
 #![no_std]
 #![feature(alloc_error_handler, lang_items)]
@@ -25,15 +25,19 @@ multiversx_sc_wasm_adapter::endpoints! {
         setRoyaltiesClaimToken
         setClaimIsEnabled
         addAcceptedToken
+        removeAcceptedToken
         addAcceptedPayment
+        removeAcceptedPayment
         setIsPaused
         addOffer
         changeOfferPrice
         cancelOffer
+        withdrawCancelledOffer
         acceptOffer
         setTreasuryAddress
         setAdministrator
         getOffers
+        getCancelledOffer
         getUserListedOffers
         getAcceptedTokens
         getAcceptedTokenPayments
@@ -41,21 +45,21 @@ multiversx_sc_wasm_adapter::endpoints! {
         getDiscountFeePercentageSeller
         getPercentageCutFromSeller
         getPercentageCutFromBuyer
-        getEmptyOfferIndexes
-        getHighestOfferIndex
+        getLastValidOfferId
         getIsPaused
         getTreasuryAddress
         getClaimsAddress
         getRoyaltiesClaimToken
         getAdministrator
         getClaimIsEnabled
-        getRequirements
+        viewRequirements
         viewPagedOffers
-        getUserTotalOffers
+        viewUserTotalOffers
         viewUserListedOffers
+        viewCancelledOffers
         viewOffers
         viewOffer
-        numberOfOffers
+        viewNumberOfOffers
     )
 }
 
