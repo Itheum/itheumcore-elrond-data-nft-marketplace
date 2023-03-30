@@ -3143,7 +3143,7 @@ fn views_test() {
                 quantity: managed_biguint!(4u64),
             };
 
-            let offers = sc.view_offers_paged(0u64, 1u64, OptionalValue::None);
+            let offers = sc.view_paged_offers(0u64, 1u64, OptionalValue::None);
 
             assert_eq!(offers.get(0usize).offer_id, offer_mock_1.offer_id);
             assert_eq!(offers.get(0usize).owner, offer_mock_1.owner);
@@ -3201,7 +3201,7 @@ fn views_test() {
             );
             assert_eq!(offers.get(1usize).quantity, offer_mock_2.quantity);
 
-            let offers_2 = sc.view_offers_paged(
+            let offers_2 = sc.view_paged_offers(
                 0u64,
                 1u64,
                 OptionalValue::Some(managed_address!(first_user_address)),

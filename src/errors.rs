@@ -1,4 +1,4 @@
-pub const ERR_CONTRACT_ALREADY_INITLAIZED: &str = "Contract already initialized";
+pub const ERR_CONTRACT_ALREADY_INITIALIZED: &str = "Contract already initialized";
 pub const ERR_DISCOUNTS_HIGHER_THAN_PERCENTAGE_CUTS: &str =
     "Discounts cannot be higher than the fee percentage cuts";
 pub const ERR_FEES_CANNOT_BE_LOWER_THAN_DISCOUNTS: &str =

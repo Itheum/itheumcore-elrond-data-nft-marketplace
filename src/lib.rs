@@ -4,7 +4,7 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 use crate::errors::ERR_CANNOT_ACCEPT_OWN_OFFER;
-use crate::errors::ERR_CONTRACT_ALREADY_INITLAIZED;
+use crate::errors::ERR_CONTRACT_ALREADY_INITIALIZED;
 use crate::errors::ERR_DISCOUNTS_HIGHER_THAN_PERCENTAGE_CUTS;
 use crate::errors::ERR_FEES_CANNOT_BE_LOWER_THAN_DISCOUNTS;
 use crate::errors::ERR_MIN_AMOUNT_TOO_HIGH;
@@ -71,7 +71,7 @@ pub trait DataMarket:
             self.treasury_address().is_empty()
                 && self.accepted_payments().is_empty()
                 && self.accepted_tokens().is_empty(),
-            ERR_CONTRACT_ALREADY_INITLAIZED
+            ERR_CONTRACT_ALREADY_INITIALIZED
         );
         self.set_accepted_token_event(&accepted_token_id);
         self.add_accepted_token(accepted_token_id);
@@ -333,7 +333,7 @@ pub trait DataMarket:
         }
     }
 
-    #[endpoint(whithdrawCancelledOffer)]
+    #[endpoint(withdrawCancelledOffer)]
     fn withdraw_from_cancelled_offer(&self, offer_id: u64) {
         let caller = self.blockchain().get_caller();
         let offer = self.try_get_cancelled_offer(&caller, offer_id);

@@ -32,7 +32,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         addOffer
         changeOfferPrice
         cancelOffer
-        whithdrawCancelledOffer
+        withdrawCancelledOffer
         acceptOffer
         setTreasuryAddress
         setAdministrator
@@ -45,7 +45,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getDiscountFeePercentageSeller
         getPercentageCutFromSeller
         getPercentageCutFromBuyer
-        getHighestOfferIndex
+        getLastValidOfferId
         getIsPaused
         getTreasuryAddress
         getClaimsAddress

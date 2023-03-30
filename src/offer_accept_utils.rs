@@ -123,7 +123,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         creator_royalties: BigUint,
         min_amount_for_seller: BigUint,
     ) {
-        // If the creator setup royalties and is not the offer owner he can benefit the royalties
+        // If the creator setup royalties and is not the offer owner he can get the royalties
         if creator != seller && &creator_royalties > &BigUint::zero() {
             require!(
                 &min_amount_for_seller
@@ -142,14 +142,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
 
             match claim_is_enabled {
                 true => {
-                    if payment_token_id.is_egld() {
-                        self.send().direct(
-                            &creator,
-                            &payment_token.token_identifier,
-                            payment_token.token_nonce,
-                            &creator_royalties,
-                        );
-                    } else if &payment_token_id != &self.royalties_claim_token().get() {
+                    if payment_token_id.is_egld() || (&payment_token_id != &self.royalties_claim_token().get()) {
                         self.send().direct(
                             &creator,
                             &payment_token.token_identifier,

@@ -30,7 +30,7 @@ pub trait ViewsModule: crate::storage::StorageModule {
     // View that returns the offers in a paged manner
     // If an address is provided, it will only return the offers of that address within the range
     #[view(viewPagedOffers)]
-    fn view_offers_paged(
+    fn view_paged_offers(
         &self,
         from: u64,
         to: u64,

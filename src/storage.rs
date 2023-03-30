@@ -97,7 +97,7 @@ pub trait StorageModule {
     #[storage_mapper("percentage_from_accepter_to_owner")]
     fn percentage_cut_from_buyer(&self) -> SingleValueMapper<BigUint>;
 
-    #[view(getHighestOfferIndex)]
+    #[view(getLastValidOfferId)]
     #[storage_mapper("last_valid_offer_id")]
     fn last_valid_offer_id(&self) -> SingleValueMapper<u64>;
 

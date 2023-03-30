@@ -70,30 +70,30 @@ pub trait EventsModule {
 
     // Emitted whenever a new offer is created
     #[event("addedOffer")]
-    fn added_offer_event(&self, #[indexed] index: &u64, #[indexed] offer: &Offer<Self::Api>);
+    fn added_offer_event(&self, #[indexed] offer_id: &u64, #[indexed] offer: &Offer<Self::Api>);
 
     // Emitted whenever an offer price is updated
     #[event("updatedOfferPrice")]
-    fn updated_offer_price_event(&self, #[indexed] index: &u64, #[indexed] price: &BigUint);
+    fn updated_offer_price_event(&self, #[indexed] offer_id: &u64, #[indexed] price: &BigUint);
 
     // Emitted whenever an offer is cancelled
     #[event("cancelledOffer")]
     fn cancelled_offer_event(
         &self,
-        #[indexed] index: &u64,
+        #[indexed] offer_id: &u64,
         #[indexed] quantity: &BigUint,
         #[indexed] with_funds: bool,
     );
 
     // Emitted whenever a cancelled offer withdrawn the tokens
     #[event("withdrawCancelledOffer")]
-    fn withdraw_cancelled_offer_event(&self, #[indexed] index: &u64);
+    fn withdraw_cancelled_offer_event(&self, #[indexed] offer_id: &u64);
 
     // Emitted whenever an offer is accepted
     #[event("acceptedOffer")]
     fn accepted_offer_event(
         &self,
-        #[indexed] index: &u64,
+        #[indexed] offer_id: &u64,
         #[indexed] buyer: &ManagedAddress,
         #[indexed] quantity: &BigUint,
     );
