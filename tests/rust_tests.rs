@@ -3201,6 +3201,10 @@ fn views_test() {
             );
             assert_eq!(offers.get(1usize).quantity, offer_mock_2.quantity);
 
+            let offer_mock_take = sc.view_paged_offers(1u64, 2u64, OptionalValue::None);
+
+            assert_eq!(offer_mock_take.get(0), offer_mock_2);
+
             let offers_2 = sc.view_paged_offers(
                 0u64,
                 1u64,

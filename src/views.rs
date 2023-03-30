@@ -36,42 +36,23 @@ pub trait ViewsModule: crate::storage::StorageModule {
         to: u64,
         opt_address: OptionalValue<ManagedAddress>,
     ) -> ManagedVec<OfferOut<Self::Api>> {
-        let mut offers = ManagedVec::new();
-        let mut nr = 0;
-        let fee = self.percentage_cut_from_buyer().get();
+        let offers = match opt_address {
+            OptionalValue::Some(address) => self
+                .user_listed_offers(&address)
+                .iter()
+                .skip(from as usize)
+                .take((to - from + 1) as usize)
+                .filter_map(|offer_id| self.view_offer(offer_id))
+                .collect(),
+            OptionalValue::None => self
+                .offers()
+                .iter()
+                .skip(from as usize)
+                .take((to - from + 1) as usize)
+                .filter_map(|(offer_id, _)| self.view_offer(offer_id))
+                .collect(),
+        };
 
-        match opt_address.clone() {
-            OptionalValue::Some(address) => {
-                for offer_id in self.user_listed_offers(&address).iter() {
-                    if nr >= from {
-                        if nr <= to {
-                            let opt_offer = self.offers().get(&offer_id);
-                            match opt_offer {
-                                Option::Some(offer) => {
-                                    offers.push(self.offer_to_offer_out(offer_id, offer, &fee));
-                                }
-                                Option::None => {}
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-                    nr += 1;
-                }
-            }
-            OptionalValue::None => {
-                for (offer_id, offer) in self.offers().iter() {
-                    if nr >= from {
-                        if nr <= to {
-                            offers.push(self.offer_to_offer_out(offer_id, offer, &fee));
-                        } else {
-                            break;
-                        }
-                    }
-                    nr += 1;
-                }
-            }
-        }
         offers
     }
 
