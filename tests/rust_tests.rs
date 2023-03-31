@@ -1791,7 +1791,9 @@ fn cancel_offer_test() {
                     quantity: managed_biguint!(1u64),
                 };
 
-                let view_cancelled_offer = sc.view_cancelled_offers().get(0);
+                let view_cancelled_offer = sc
+                    .view_cancelled_offers(&managed_address!(second_user_address))
+                    .get(0);
 
                 assert_eq!(view_cancelled_offer, correct_cancelled_offer);
             },
@@ -1949,7 +1951,9 @@ fn cancel_offer_test() {
 
                 assert_eq!(view_remained_offer, correct_remaining_offer);
 
-                let view_cancelled_offer = sc.view_cancelled_offers().get(0);
+                let view_cancelled_offer = sc
+                    .view_cancelled_offers(&managed_address!(second_user_address))
+                    .get(0);
 
                 assert_eq!(view_cancelled_offer, correct_cancelled_offer);
             },
@@ -2014,7 +2018,9 @@ fn cancel_offer_test() {
 
                 assert_eq!(is_listed, false);
 
-                let view_cancelled_offer = sc.view_cancelled_offers().get(0);
+                let view_cancelled_offer = sc
+                    .view_cancelled_offers(&managed_address!(second_user_address))
+                    .get(0);
 
                 assert_eq!(correct_cancelled_offer, view_cancelled_offer);
             },
@@ -3112,7 +3118,10 @@ fn views_test() {
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
-                assert_eq!(sc.view_user_total_offers(), 1usize);
+                assert_eq!(
+                    sc.view_user_total_offers(&managed_address!(first_user_address)),
+                    1usize
+                );
             },
         )
         .assert_ok();
@@ -3323,7 +3332,7 @@ fn views_test() {
                     quantity: managed_biguint!(1u64),
                 };
 
-                let offers_4 = sc.view_user_listed_offers();
+                let offers_4 = sc.view_user_listed_offers(&managed_address!(first_user_address));
 
                 assert_eq!(offers_4.get(0usize), offer_mock_1);
             },
@@ -3348,7 +3357,7 @@ fn views_test() {
                     quantity: managed_biguint!(4u64),
                 };
 
-                let offers_5 = sc.view_user_listed_offers();
+                let offers_5 = sc.view_user_listed_offers(&managed_address!(second_user_address));
 
                 assert_eq!(offers_5.get(0usize), offer_mock_2);
             },
