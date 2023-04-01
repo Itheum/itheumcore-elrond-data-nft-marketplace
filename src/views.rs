@@ -57,17 +57,14 @@ pub trait ViewsModule: crate::storage::StorageModule {
     }
 
     #[view(viewUserTotalOffers)]
-    fn view_user_total_offers(&self) -> usize {
-        let address = self.blockchain().get_caller();
-        self.user_listed_offers(&address).len()
+    fn view_user_total_offers(&self, address: &ManagedAddress) -> usize {
+        self.user_listed_offers(address).len()
     }
 
     #[view(viewUserListedOffers)]
-    fn view_user_listed_offers(&self) -> ManagedVec<OfferOut<Self::Api>> {
-        let address = self.blockchain().get_caller();
-
+    fn view_user_listed_offers(&self, address: &ManagedAddress) -> ManagedVec<OfferOut<Self::Api>> {
         let offer_ids = self
-            .user_listed_offers(&address)
+            .user_listed_offers(address)
             .iter()
             .collect::<ManagedVec<u64>>();
 
@@ -80,12 +77,11 @@ pub trait ViewsModule: crate::storage::StorageModule {
     }
 
     #[view(viewCancelledOffers)]
-    fn view_cancelled_offers(&self) -> ManagedVec<OfferOut<Self::Api>> {
-        let address = self.blockchain().get_caller();
+    fn view_cancelled_offers(&self, address: &ManagedAddress) -> ManagedVec<OfferOut<Self::Api>> {
         let fee = self.percentage_cut_from_buyer().get();
 
         let offers = self
-            .cancelled_offers(&address)
+            .cancelled_offers(address)
             .iter()
             .map(|(offer_id, offer)| self.offer_to_offer_out(offer_id, offer, &fee))
             .collect::<ManagedVec<OfferOut<Self::Api>>>();
