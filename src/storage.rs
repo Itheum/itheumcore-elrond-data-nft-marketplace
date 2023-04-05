@@ -12,11 +12,22 @@ pub struct Offer<M: ManagedTypeApi> {
     pub owner: ManagedAddress<M>,
     pub offered_token: EsdtTokenPayment<M>,
     pub wanted_token: EgldOrEsdtTokenPayment<M>,
+    pub min_amount_for_seller: BigUint<M>,
     pub quantity: BigUint<M>,
 }
-#[derive(ManagedVecItem, Clone, NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
+#[derive(
+    ManagedVecItem,
+    Clone,
+    NestedEncode,
+    NestedDecode,
+    TopEncode,
+    TopDecode,
+    TypeAbi,
+    Debug,
+    PartialEq,
+)]
 pub struct OfferOut<M: ManagedTypeApi> {
-    pub index: u64,
+    pub offer_id: u64,
     pub owner: ManagedAddress<M>,
     pub offered_token_identifier: TokenIdentifier<M>,
     pub offered_token_nonce: u64,
@@ -54,6 +65,10 @@ pub trait StorageModule {
     #[storage_mapper("offers")]
     fn offers(&self) -> MapMapper<u64, Offer<Self::Api>>;
 
+    #[view(getCancelledOffer)]
+    #[storage_mapper("cancelled_offers")]
+    fn cancelled_offers(&self, address: &ManagedAddress) -> MapMapper<u64, Offer<Self::Api>>;
+
     #[view(getUserListedOffers)]
     #[storage_mapper("user_offers")]
     fn user_listed_offers(&self, address: &ManagedAddress) -> UnorderedSetMapper<u64>;
@@ -82,19 +97,14 @@ pub trait StorageModule {
     #[storage_mapper("percentage_from_accepter_to_owner")]
     fn percentage_cut_from_buyer(&self) -> SingleValueMapper<BigUint>;
 
-    #[view(getEmptyOfferIndexes)]
-    #[storage_mapper("empty_offer_indexes")]
-    fn empty_offer_indexes(&self) -> UnorderedSetMapper<u64>;
-
-    #[view(getHighestOfferIndex)]
-    #[storage_mapper("highest_offer_index")]
-    fn highest_offer_index(&self) -> SingleValueMapper<u64>;
+    #[view(getLastValidOfferId)]
+    #[storage_mapper("last_valid_offer_id")]
+    fn last_valid_offer_id(&self) -> SingleValueMapper<u64>;
 
     #[view(getIsPaused)]
     #[storage_mapper("pause")]
     fn is_paused(&self) -> SingleValueMapper<bool>;
 
-    // Stores the treasury address
     #[view(getTreasuryAddress)]
     #[storage_mapper("treasury_address")]
     fn treasury_address(&self) -> SingleValueMapper<ManagedAddress>;
@@ -107,7 +117,6 @@ pub trait StorageModule {
     #[storage_mapper("royalties_accepted_token")]
     fn royalties_claim_token(&self) -> SingleValueMapper<TokenIdentifier>;
 
-    // Stores admin address
     #[view(getAdministrator)]
     #[storage_mapper("administrator")]
     fn administrator(&self) -> SingleValueMapper<ManagedAddress>;

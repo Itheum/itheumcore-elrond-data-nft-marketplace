@@ -27,7 +27,7 @@ Understanding this document is also easier if one knows how [ESDT token transact
 The setup workflow for the smart contract is as follows:
 
 - The SC deployment
-- Setting up the paramenters used in trades (Accepted payment token, Accepted trade token, fees, discounts, maximum price per offer )
+- Setting up the parameters used in trades (Accepted payment token, Accepted trade token, fees, discounts, maximum price per offer )
 
 #### init
 
@@ -247,14 +247,14 @@ Example: "ESDTNFTTransfer@444154414e46542d613631333137@01@0a@30bf219fe20c3918f1d
 ```rust
 #[endpoint(changeOfferPrice)]
     fn change_offer_price(&self,
-     index: u64,
+     offer_id: u64,
      new_fee: BigUint
      )
 ```
 
-Endpoint that lets the seller change the price of their offers. The seller can change only their offers. It takes the offer index and the new price.
+Endpoint that lets the seller change the price of their offers. The seller can change only their offers. It takes the offer_id and the new price.
 
-Call structure: "changeOfferPrice" + "@" + index hex encoded + "@" + new_fee hex encoded.
+Call structure: "changeOfferPrice" + "@" + offer_id hex encoded + "@" + new_fee hex encoded.
 
 Example: "changeOfferPrice@00@91b77e5e5d9a0000"
 
@@ -263,14 +263,14 @@ Example: "changeOfferPrice@00@91b77e5e5d9a0000"
 ```rust
 #[endpoint(cancelOffer)]
     fn cancel_offer(&self,
-    index: u64,
+    offer_id: u64,
     quantity: BigUint,
     );
 ```
 
-Endpoint that lets the seller cancel their offers. The seller can cancel only their offers. The owner and administrator can cancel any offer. It takes the offer index and the quantity that needs to be cancelled. The quantity is the same as in the addOffer endpoint.
+Endpoint that lets the seller cancel their offers. The seller can cancel only their offers. The owner and administrator can cancel any offer. It takes the offer_id and the quantity that needs to be cancelled. The quantity is the same as in the addOffer endpoint.
 
-Call structure: "cancelOffer" + "@" + index hex encoded + "@" + quantity hex encoded.
+Call structure: "cancelOffer" + "@" + offer_id hex encoded + "@" + quantity hex encoded.
 
 Example: "cancelOffer@00@02"
 
@@ -280,14 +280,14 @@ Example: "cancelOffer@00@02"
 #[payable("*")]
     #[endpoint(acceptOffer)]
     fn accept_offer(&self,
-    index: u64,
+    offer_id: u64,
     quantity: BigUint
     );
 ```
 
-Endpoint that will allow the buyer to accept the offer. The buyer needs to send the payment token id and the payment token fee and also to take into consideraton the marketplace fee that needs to be sent along with the token price. The endpoint takes two arguments the offer index and the quantity. What to keep in mind about the quantity here is the fact that in the offer the seller can sell batches of the same token or one token at a time.
+Endpoint that will allow the buyer to accept the offer. The buyer needs to send the payment token id and the payment token fee and also to take into consideration the marketplace fee that needs to be sent along with the token price. The endpoint takes two arguments the offer_id and the quantity. What to keep in mind about the quantity here is the fact that in the offer the seller can sell batches of the same token or one token at a time.
 
-Call strucutre: "ESDTTransfer" + "@" + payment_token_id hex encoded + "@" + payment_token_nonce hex encoded + "@" + (payment_token_fee hex encoded + marketplace fee hex encoded ) + "@" + "acceptOffer" hex encoded + "@" + index hex encoded + "@" + quantity hex encoded.
+Call structure: "ESDTTransfer" + "@" + payment_token_id hex encoded + "@" + payment_token_nonce hex encoded + "@" + (payment_token_fee hex encoded + marketplace fee hex encoded ) + "@" + "acceptOffer" hex encoded + "@" + offer_id hex encoded + "@" + quantity hex encoded.
 
 Example: "ESDTTransfer@2049544845554d2d613631333137@00@01a8a909dfcef40000@6163636570744f66666572@00@01"
 
@@ -298,15 +298,15 @@ Example: "ESDTTransfer@2049544845554d2d613631333137@00@01a8a909dfcef40000@616363
 ```rust
  #[view(viewOffer)]
     fn view_offer(&self,
-    index: u64
+    offer_id: u64
     ) -> Option<OfferOut<Self::Api>>
 ```
 
-Endpoint that returns the offer details. It takes the offer index as an argument.
+Endpoint that returns the offer details. It takes the offer_id as an argument.
 
 The structure contains the following fields:
 
-- **index**: the index of the offer
+- **offer_id**: the offer id of the offer
 - **owner**: the address of the owner(seller) of the offer
 - **offered_token_identifier**: the token id of the offered token
 - **offered_token_nonce**: the token nonce of the offered token
@@ -316,7 +316,7 @@ The structure contains the following fields:
 - **wanted_token_amount**: the amount(price) of the wanted(payment) token
 - **quantity**: the quantity represents the remaining supply of the offered token that can be sold
 
-Call structure: "viewOffer" + "@" + index hex encoded.
+Call structure: "viewOffer" + "@" + offer_id hex encoded.
 
 Example: "viewOffer@00"
 
@@ -327,8 +327,8 @@ This smart contract aims to offer the Elrond community an audited NFT marketplac
 ### Setting up dev environment (project development bootstrap)
 
 - Uses `multiversx-sc-* 0.39.5` SDK libs (see Cargo.toml)
-- Building requires minimum **mxpy 5.2.3** (newer version should also work but devs used 5.2.3). Check version using `mxpy --version`
-- To build the project, requires minimum Rust version `1.68.0-nightly`. Check your Rust version by running `rustc --version`. To update your Rust, run `rustup update`. To set to nightly run `rustup default nightly` (devs used 1.69.0-nightly)
+- Building requires minimum **mxpy 6.1.1** (newer version should also work but devs used 6.1.1). Check version using `mxpy --version`
+- To build the project, requires minimum Rust version `1.69.0-nightly`. Check your Rust version by running `rustc --version`. To update your Rust, run `rustup update`. To set to nightly run `rustup default nightly` (devs used 1.69.0-nightly)
 - After you make sure you have the minimum Rust version you can then begin development. After you clone repo and before you run build, deploy or run the tests - follow these steps
 
 ```

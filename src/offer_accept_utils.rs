@@ -1,6 +1,7 @@
 use crate::{
     claims::{self, ClaimType},
-    storage::OfferType,
+    errors::{ERR_MIN_AMOUNT_NOT_FILLED, ERR_OFFER_NOT_FOUND},
+    storage::{Offer, OfferType},
 };
 
 multiversx_sc::imports!();
@@ -19,17 +20,32 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         }
     }
 
-    // [TO DO] Generic method to check address has Genesis NFT staked
+    fn try_get_cancelled_offer(&self, address: &ManagedAddress, offer_id: u64) -> Offer<Self::Api> {
+        let offer = self
+            .cancelled_offers(&address)
+            .get(&offer_id)
+            .unwrap_or_else(|| sc_panic!(ERR_OFFER_NOT_FOUND));
+
+        offer
+    }
+
+    fn try_get_offer(&self, offer_id: u64) -> Offer<Self::Api> {
+        let offer = self
+            .offers()
+            .get(&offer_id)
+            .unwrap_or_else(|| sc_panic!(ERR_OFFER_NOT_FOUND));
+
+        offer
+    }
+
     fn check_traders_have_discount(
         &self,
         buyer_address: &ManagedAddress,
         seller_address: &ManagedAddress,
     ) -> (bool, bool) {
-        // [TO DO] Generic method to check address has Genesis NFT staked
         let buyer_discount: bool;
         let seller_discount: bool;
-        // [TO DO] delete after the Genesis Nft staked check is implemented
-        //------- Implemented for the sake of testing
+
         if self.discount_fee_percentage_buyer().get() != BigUint::zero() {
             buyer_discount = true;
         } else {
@@ -40,7 +56,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         } else {
             seller_discount = false;
         }
-        //-------
+
         (buyer_discount, seller_discount)
     }
 
@@ -105,21 +121,28 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         fee_from_seller: BigUint,
         creator: ManagedAddress,
         creator_royalties: BigUint,
+        min_amount_for_seller: BigUint,
     ) {
-        // If the creator setup royalties and is not the offer owner he can benefit the royalties
+        // If the creator setup royalties and is not the offer owner he can get the royalties
         if creator != seller && &creator_royalties > &BigUint::zero() {
+            require!(
+                &min_amount_for_seller
+                    <= &(&buyer_payment - &fee_from_buyer - &fee_from_seller - &creator_royalties),
+                ERR_MIN_AMOUNT_NOT_FILLED
+            );
             self.send().direct(
                 &seller,
                 &payment_token.token_identifier,
                 payment_token.token_nonce,
                 &(&buyer_payment - &creator_royalties - &fee_from_seller - &fee_from_buyer),
             );
-            let payment_token_id = payment_token.token_identifier.clone().unwrap_esdt();
+
+            let payment_token_id = payment_token.token_identifier.clone();
             let claim_is_enabled = self.claim_is_enabled().get();
 
             match claim_is_enabled {
                 true => {
-                    if &payment_token_id != &self.royalties_claim_token().get() {
+                    if payment_token_id.is_egld() || (&payment_token_id != &self.royalties_claim_token().get()) {
                         self.send().direct(
                             &creator,
                             &payment_token.token_identifier,
@@ -127,13 +150,15 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                             &creator_royalties,
                         );
                     } else {
+                        let claim_payment = EsdtTokenPayment::new(
+                            payment_token_id.unwrap_esdt(),
+                            payment_token.token_nonce,
+                            creator_royalties,
+                        );
+
                         self.claims_proxy(self.claims_address().get())
                             .add_claim(&creator, ClaimType::Royalty)
-                            .with_esdt_transfer(EsdtTokenPayment::new(
-                                payment_token_id,
-                                payment_token.token_nonce,
-                                creator_royalties,
-                            ))
+                            .with_esdt_transfer(claim_payment)
                             .transfer_execute();
                     }
                 }
@@ -145,6 +170,10 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                 ),
             }
         } else {
+            require!(
+                &min_amount_for_seller <= &(&buyer_payment - &fee_from_buyer - &fee_from_seller),
+                ERR_MIN_AMOUNT_NOT_FILLED
+            );
             self.send().direct(
                 &seller,
                 &payment_token.token_identifier,
