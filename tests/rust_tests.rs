@@ -988,18 +988,7 @@ fn value_setters_test() {
 
     b_wrapper
         .execute_tx(
-            second_user_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                sc.remove_accepted_token(managed_token_id!(SFT_TICKER));
-            },
-        )
-        .assert_user_error("Address is not privileged");
-
-    b_wrapper
-        .execute_tx(
-            administrator_address,
+            owner_address,
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
@@ -1069,18 +1058,7 @@ fn value_setters_test() {
 
     b_wrapper
         .execute_tx(
-            second_user_address,
-            &setup.contract_wrapper,
-            &rust_biguint!(0u64),
-            |sc| {
-                sc.remove_accepted_payment(managed_token_id_wrapped!(TOKEN_ID));
-            },
-        )
-        .assert_user_error("Address is not privileged");
-
-    b_wrapper
-        .execute_tx(
-            administrator_address,
+            owner_address,
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
             |sc| {
@@ -1683,6 +1661,39 @@ fn cancel_offer_test() {
 
     b_wrapper
         .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_is_paused(true);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            first_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.cancel_offer(1u64, managed_biguint!(1u64), true);
+            },
+        )
+        .assert_user_error("Contract paused");
+
+    b_wrapper
+        .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_is_paused(false);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
             first_user_address,
             &setup.contract_wrapper,
             &rust_biguint!(0u64),
@@ -1810,6 +1821,39 @@ fn cancel_offer_test() {
             },
         )
         .assert_user_error("Offer not found");
+
+    b_wrapper
+        .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_is_paused(true);
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_tx(
+            second_user_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.withdraw_from_cancelled_offer(2u64);
+            },
+        )
+        .assert_user_error("Contract paused");
+
+    b_wrapper
+        .execute_tx(
+            &owner_address,
+            &setup.contract_wrapper,
+            &rust_biguint!(0u64),
+            |sc| {
+                sc.set_is_paused(false);
+            },
+        )
+        .assert_ok();
 
     b_wrapper
         .execute_tx(
