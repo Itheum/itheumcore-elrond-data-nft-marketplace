@@ -227,7 +227,7 @@ pub trait DataMarket:
         );
 
         require!(
-            min_amount_for_seller <= &payment_token_fee * &data_nft.amount,
+            &min_amount_for_seller <= &payment_token_fee,
             ERR_MIN_AMOUNT_TOO_HIGH
         );
 
