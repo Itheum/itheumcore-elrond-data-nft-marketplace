@@ -284,6 +284,7 @@ pub trait DataMarket:
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
 
+        require!(quantity > 0, ERR_QUANTITY_MUST_BE_POSITIVE);
         require!(offer.quantity >= quantity, ERR_QUANTITY_TOO_HIGH);
         require!(
             &caller == &offer.owner
@@ -291,9 +292,6 @@ pub trait DataMarket:
                 || &caller == &self.administrator().get(),
             ERR_ONLY_SPECIAL_ADDRESS
         );
-        if &caller == &offer.owner {
-            self.require_sc_ready_to_trade();
-        }
         if send_funds_back {
             self.send().direct_esdt(
                 &offer.owner,
