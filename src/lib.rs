@@ -53,8 +53,14 @@ pub trait DataMarket:
             .set_if_empty(BigUint::zero());
 
         self.pause_toggle_event(&true);
-        self.set_percentage_cuts_event(&BigUint::from(200u64), &BigUint::from(200u64));
-        self.set_discounts_event(&BigUint::zero(), &BigUint::zero());
+        self.set_percentage_cuts_event(
+            &self.percentage_cut_from_seller().get(),
+            &self.percentage_cut_from_buyer().get(),
+        );
+        self.set_discounts_event(
+            &self.discount_fee_percentage_seller().get(),
+            &self.discount_fee_percentage_buyer().get(),
+        );
     }
 
     // Endpoint that will be used by the contract owner to initialize the contract.
