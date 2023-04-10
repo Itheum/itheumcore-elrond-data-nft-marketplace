@@ -5,6 +5,7 @@ multiversx_sc::derive_imports!();
 
 use crate::errors::ERR_CANNOT_ACCEPT_OWN_OFFER;
 use crate::errors::ERR_CONTRACT_ALREADY_INITIALIZED;
+use crate::errors::ERR_CONTRACT_PAUSED;
 use crate::errors::ERR_DISCOUNTS_HIGHER_THAN_PERCENTAGE_CUTS;
 use crate::errors::ERR_FEES_CANNOT_BE_LOWER_THAN_DISCOUNTS;
 use crate::errors::ERR_MIN_AMOUNT_TOO_HIGH;
@@ -53,8 +54,14 @@ pub trait DataMarket:
             .set_if_empty(BigUint::zero());
 
         self.pause_toggle_event(&true);
-        self.set_percentage_cuts_event(&BigUint::from(200u64), &BigUint::from(200u64));
-        self.set_discounts_event(&BigUint::zero(), &BigUint::zero());
+        self.set_percentage_cuts_event(
+            &self.percentage_cut_from_seller().get(),
+            &self.percentage_cut_from_buyer().get(),
+        );
+        self.set_discounts_event(
+            &self.discount_fee_percentage_seller().get(),
+            &self.discount_fee_percentage_buyer().get(),
+        );
     }
 
     // Endpoint that will be used by the contract owner to initialize the contract.
@@ -104,8 +111,8 @@ pub trait DataMarket:
         let caller = self.blockchain().get_caller();
         self.require_is_privileged(&caller);
         require!(
-            seller_fee >= self.discount_fee_percentage_buyer().get()
-                && buyer_fee >= self.discount_fee_percentage_seller().get(),
+            buyer_fee >= self.discount_fee_percentage_buyer().get()
+                && seller_fee >= self.discount_fee_percentage_seller().get(),
             ERR_FEES_CANNOT_BE_LOWER_THAN_DISCOUNTS
         );
         self.set_percentage_cuts_event(&seller_fee, &buyer_fee);
@@ -143,10 +150,9 @@ pub trait DataMarket:
     }
 
     // Endpoint that will be used by privileged address and contract owner to remove an accepted tradable token.
+    #[only_owner]
     #[endpoint(removeAcceptedToken)]
     fn remove_accepted_token(&self, token_id: TokenIdentifier) {
-        let caller = self.blockchain().get_caller();
-        self.require_is_privileged(&caller);
         self.remove_accepted_token_event(&token_id);
         self.accepted_tokens().remove(&token_id);
     }
@@ -161,10 +167,9 @@ pub trait DataMarket:
     }
 
     // Endpoint that will be used by privileged address and contract owner to remove an accepted payment.
+    #[only_owner]
     #[endpoint(removeAcceptedPayment)]
     fn remove_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier) {
-        let caller = self.blockchain().get_caller();
-        self.require_is_privileged(&caller);
         self.accepted_payments().remove(&token_id);
         self.remove_accepted_payment_event(&token_id);
     }
@@ -221,7 +226,7 @@ pub trait DataMarket:
         );
 
         require!(
-            min_amount_for_seller <= &payment_token_fee * &data_nft.amount,
+            &min_amount_for_seller <= &payment_token_fee,
             ERR_MIN_AMOUNT_TOO_HIGH
         );
 
@@ -284,6 +289,8 @@ pub trait DataMarket:
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
 
+        require!(!self.is_paused().get(), ERR_CONTRACT_PAUSED);
+        require!(quantity > 0, ERR_QUANTITY_MUST_BE_POSITIVE);
         require!(offer.quantity >= quantity, ERR_QUANTITY_TOO_HIGH);
         require!(
             &caller == &offer.owner
@@ -291,9 +298,6 @@ pub trait DataMarket:
                 || &caller == &self.administrator().get(),
             ERR_ONLY_SPECIAL_ADDRESS
         );
-        if &caller == &offer.owner {
-            self.require_sc_ready_to_trade();
-        }
         if send_funds_back {
             self.send().direct_esdt(
                 &offer.owner,
@@ -337,7 +341,7 @@ pub trait DataMarket:
     fn withdraw_from_cancelled_offer(&self, offer_id: u64) {
         let caller = self.blockchain().get_caller();
         let offer = self.try_get_cancelled_offer(&caller, offer_id);
-        self.require_sc_ready_to_trade();
+        require!(!self.is_paused().get(), ERR_CONTRACT_PAUSED);
         require!(caller == offer.owner, ERR_ONLY_OFFER_OWNER);
 
         self.send().direct_esdt(

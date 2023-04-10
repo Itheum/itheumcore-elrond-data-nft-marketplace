@@ -20,3 +20,4 @@ pub const ERR_WRONG_TOKEN_AMOUNT: &str = "Wrong token amount";
 pub const ERR_MIN_AMOUNT_NOT_FILLED: &str = "Min amount not filled";
 pub const ERR_ADDRESS_NOT_PRIVILEGED: &str = "Address is not privileged";
 pub const ERR_MARKETPLACE_NOT_READY: &str = "Marketplace trade is not ready";
+pub const ERR_CONTRACT_PAUSED: &str = "Contract paused";
