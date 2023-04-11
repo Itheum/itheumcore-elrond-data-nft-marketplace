@@ -286,7 +286,10 @@ pub trait DataMarket:
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
 
-        require!(!self.is_paused().get(), ERR_CONTRACT_PAUSED);
+        if caller != sc_owner {
+            require!(!self.is_paused().get(), ERR_CONTRACT_PAUSED);
+        };
+
         require!(quantity > 0, ERR_QUANTITY_MUST_BE_POSITIVE);
         require!(offer.quantity >= quantity, ERR_QUANTITY_TOO_HIGH);
         require!(
