@@ -271,10 +271,7 @@ pub trait DataMarket:
             None => sc_panic!(ERR_TOKEN_NOT_ACCEPTED),
         }
 
-        require!(
-            min_amount_for_seller <= &new_fee * &offer.offered_token.amount,
-            ERR_MIN_AMOUNT_TOO_HIGH
-        );
+        require!(&min_amount_for_seller <= &new_fee, ERR_MIN_AMOUNT_TOO_HIGH);
         self.updated_offer_price_event(&offer_id, &new_fee);
         let payment_token = EgldOrEsdtTokenPayment::new(token_identifier, nonce, new_fee);
         offer.min_amount_for_seller = min_amount_for_seller;
