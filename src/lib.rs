@@ -149,7 +149,7 @@ pub trait DataMarket:
         self.accepted_tokens().insert(token_id);
     }
 
-    // Endpoint that will be used by privileged address and contract owner to remove an accepted tradable token.
+    // Endpoint that will be used by contract owner to remove an accepted tradable token.
     #[only_owner]
     #[endpoint(removeAcceptedToken)]
     fn remove_accepted_token(&self, token_id: TokenIdentifier) {
@@ -166,7 +166,7 @@ pub trait DataMarket:
         self.accepted_payments().insert(token_id, maximum_fee);
     }
 
-    // Endpoint that will be used by privileged address and contract owner to remove an accepted payment.
+    // Endpoint that will be used by contract owner to remove an accepted payment.
     #[only_owner]
     #[endpoint(removeAcceptedPayment)]
     fn remove_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier) {
