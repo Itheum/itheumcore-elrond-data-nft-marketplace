@@ -149,7 +149,7 @@ pub trait DataMarket:
         self.accepted_tokens().insert(token_id);
     }
 
-    // Endpoint that will be used by privileged address and contract owner to remove an accepted tradable token.
+    // Endpoint that will be used by contract owner to remove an accepted tradable token.
     #[only_owner]
     #[endpoint(removeAcceptedToken)]
     fn remove_accepted_token(&self, token_id: TokenIdentifier) {
@@ -166,7 +166,7 @@ pub trait DataMarket:
         self.accepted_payments().insert(token_id, maximum_fee);
     }
 
-    // Endpoint that will be used by privileged address and contract owner to remove an accepted payment.
+    // Endpoint that will be used by contract owner to remove an accepted payment.
     #[only_owner]
     #[endpoint(removeAcceptedPayment)]
     fn remove_accepted_payment(&self, token_id: EgldOrEsdtTokenIdentifier) {
@@ -271,10 +271,7 @@ pub trait DataMarket:
             None => sc_panic!(ERR_TOKEN_NOT_ACCEPTED),
         }
 
-        require!(
-            min_amount_for_seller <= &new_fee * &offer.offered_token.amount,
-            ERR_MIN_AMOUNT_TOO_HIGH
-        );
+        require!(&min_amount_for_seller <= &new_fee, ERR_MIN_AMOUNT_TOO_HIGH);
         self.updated_offer_price_event(&offer_id, &new_fee);
         let payment_token = EgldOrEsdtTokenPayment::new(token_identifier, nonce, new_fee);
         offer.min_amount_for_seller = min_amount_for_seller;
@@ -289,7 +286,10 @@ pub trait DataMarket:
         let caller = self.blockchain().get_caller();
         let sc_owner = self.blockchain().get_owner_address();
 
-        require!(!self.is_paused().get(), ERR_CONTRACT_PAUSED);
+        if caller != sc_owner {
+            require!(!self.is_paused().get(), ERR_CONTRACT_PAUSED);
+        };
+
         require!(quantity > 0, ERR_QUANTITY_MUST_BE_POSITIVE);
         require!(offer.quantity >= quantity, ERR_QUANTITY_TOO_HIGH);
         require!(
