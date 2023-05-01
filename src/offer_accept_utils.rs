@@ -40,8 +40,8 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
 
     fn check_traders_have_discount(
         &self,
-        buyer_address: &ManagedAddress,
-        seller_address: &ManagedAddress,
+        _buyer_address: &ManagedAddress,
+        _seller_address: &ManagedAddress,
     ) -> (bool, bool) {
         let buyer_discount: bool;
         let seller_discount: bool;
