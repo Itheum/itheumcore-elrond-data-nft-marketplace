@@ -15,8 +15,6 @@ deploy(){
     mxpy --verbose contract deploy \
     --bytecode output/data_market.wasm \
     --outfile deployOutput \
-    --metadata-not-readable \
-    --metadata-payable-by-sc \
     --pem ${WALLET} \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
