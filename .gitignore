@@ -19,3 +19,6 @@ erdpy.data-storage.json
 
 .DS_Store
 mxpy.data-storage.json
+
+deployOutputMainnet
+deploy-mainnet.interaction.json
