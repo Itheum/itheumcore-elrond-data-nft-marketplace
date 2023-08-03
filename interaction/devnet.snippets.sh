@@ -164,7 +164,7 @@ addAcceptedToken(){
 }
 
 addAcceptedPayment(){
-    # $1 =token identifier  
+    # $1 = token identifier
     # $2 = maximum payment fee per SFT
  
 
@@ -176,6 +176,22 @@ addAcceptedPayment(){
     --gas-limit=6000000 \
     --function "addAcceptedPayment" \
     --arguments $token_identifier $2 \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+}
+
+removeAcceptedPayment(){
+    # $1 = token identifier
+
+    token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
+
+      mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "removeAcceptedPayment" \
+    --arguments $token_identifier \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return

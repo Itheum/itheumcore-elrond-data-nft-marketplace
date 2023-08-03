@@ -183,6 +183,23 @@ addAcceptedPaymentMainnet(){
     --send || return
 }
 
+removeAcceptedPayment(){
+    # $1 = token identifier
+
+    token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
+
+      mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --gas-limit=6000000 \
+    --function "removeAcceptedPayment" \
+    --arguments $token_identifier \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
+    --send || return
+}
+
 setClaimsContractMainnet(){
     # $1 = claims contract address
 
