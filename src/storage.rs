@@ -1,3 +1,5 @@
+use multiversx_sc::codec::{NestedDecodeInput, TopDecodeInput};
+
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
@@ -37,7 +39,7 @@ pub struct MarketPlaceRequirements<M: ManagedTypeApi> {
     pub percentage_cut_from_buyer: BigUint<M>,
     pub percentage_cut_from_seller: BigUint<M>,
 }
-#[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Clone, Debug, TypeAbi)]
+#[derive(TopEncode, NestedEncode, PartialEq, Clone, Debug, TypeAbi)]
 pub struct DataNftAttributes<M: ManagedTypeApi> {
     pub data_stream_url: ManagedBuffer<M>,
     pub data_preview_url: ManagedBuffer<M>,
@@ -46,6 +48,38 @@ pub struct DataNftAttributes<M: ManagedTypeApi> {
     pub creation_time: u64,
     pub title: ManagedBuffer<M>,
     pub description: ManagedBuffer<M>,
+}
+
+impl<M: ManagedTypeApi> TopDecode for DataNftAttributes<M> {
+    fn top_decode<I>(input: I) -> Result<Self, DecodeError>
+    where
+        I: TopDecodeInput,
+    {
+        let mut buffer = input.into_nested_buffer();
+        Self::dep_decode(&mut buffer)
+    }
+}
+
+impl<M: ManagedTypeApi> NestedDecode for DataNftAttributes<M> {
+    fn dep_decode<I: NestedDecodeInput>(input: &mut I) -> Result<Self, DecodeError> {
+        let data_stream_url = ManagedBuffer::dep_decode(input)?;
+        let data_preview_url = ManagedBuffer::dep_decode(input)?;
+        let data_marshal_url = ManagedBuffer::dep_decode(input)?;
+        let creator = ManagedAddress::dep_decode(input)?;
+        let creation_time = u64::dep_decode(input)?;
+        let title = ManagedBuffer::dep_decode(input)?;
+        let description = ManagedBuffer::dep_decode(input)?;
+
+        Result::Ok(DataNftAttributes {
+            data_stream_url,
+            data_preview_url,
+            data_marshal_url,
+            creator,
+            creation_time,
+            title,
+            description,
+        })
+    }
 }
 
 #[multiversx_sc::module]
