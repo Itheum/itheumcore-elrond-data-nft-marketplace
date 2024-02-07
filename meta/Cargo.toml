@@ -1,12 +1,9 @@
 [package]
 name = "data_market-meta"
-version = "0.0.0"
-edition = "2018"
+version = "1.0.0"
+edition = "2021"
 publish = false
-authors = [
-    "Ovidiu Damian - Itheum",
-    "Bucur David - Itheum",
-]
+authors = [ "Ovidiu Damian - Itheum","Bucur David - Itheum","Mark Paul - Itheum"]
 
 [dev-dependencies]
 
@@ -14,8 +11,7 @@ authors = [
 path = ".."
 
 [dependencies.multiversx-sc]
-version = "0.47.3"
+version = "0.39.7"
 
 [dependencies.multiversx-sc-meta]
-version = "0.47.3"
-default-features = false
+version = "0.39.7"

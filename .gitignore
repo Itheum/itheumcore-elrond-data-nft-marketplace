@@ -4,25 +4,21 @@
 */target/
 /wallets
 
-# Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
-# More information here https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
-Cargo.lock
-
-# The erdpy output
-# output
-
-wallet.pem
+# The erdpy/mxpy output
+output*
 deployOutput
+
 commands.txt
 keystore.json
 keystorePassword.txt
-output
-output*
+wallet.pem
 *.pem
-interaction/deploy-devnet.interaction.json
+deploy-devnet.interaction.json
 erdpy.data-storage.json
-coverage.sh
 
-*.pem
+
 .DS_Store
 mxpy.data-storage.json
+
+deployOutputMainnet
+deploy-mainnet.interaction.json

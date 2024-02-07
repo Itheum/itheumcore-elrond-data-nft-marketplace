@@ -49,6 +49,10 @@ pub trait EventsModule {
     #[event("setAcceptedToken")]
     fn set_accepted_token_event(&self, #[indexed] token_identifier: &TokenIdentifier);
 
+    // Emitted whenever a accepted token is removed
+    #[event("removeAcceptedToken")]
+    fn remove_accepted_token_event(&self, #[indexed] token_identifier: &TokenIdentifier);
+
     // Emitted whenever a new accepted payment token is set
     #[event("setAcceptedPaymentToken")]
     fn set_accepted_payment_event(
@@ -57,23 +61,39 @@ pub trait EventsModule {
         #[indexed] max_payment_fee: &BigUint,
     );
 
+    // Emitted whenever an accepted payment token is removed
+    #[event("removeAcceptedPaymentToken")]
+    fn remove_accepted_payment_event(
+        &self,
+        #[indexed] token_identifier: &EgldOrEsdtTokenIdentifier,
+    );
+
     // Emitted whenever a new offer is created
     #[event("addedOffer")]
-    fn added_offer_event(&self, #[indexed] index: &u64, #[indexed] offer: &Offer<Self::Api>);
+    fn added_offer_event(&self, #[indexed] offer_id: &u64, #[indexed] offer: &Offer<Self::Api>);
 
     // Emitted whenever an offer price is updated
     #[event("updatedOfferPrice")]
-    fn updated_offer_price_event(&self, #[indexed] index: &u64, #[indexed] price: &BigUint);
+    fn updated_offer_price_event(&self, #[indexed] offer_id: &u64, #[indexed] price: &BigUint);
 
     // Emitted whenever an offer is cancelled
     #[event("cancelledOffer")]
-    fn cancelled_offer_event(&self, #[indexed] index: &u64);
+    fn cancelled_offer_event(
+        &self,
+        #[indexed] offer_id: &u64,
+        #[indexed] quantity: &BigUint,
+        #[indexed] with_funds: bool,
+    );
+
+    // Emitted whenever a cancelled offer withdrawn the tokens
+    #[event("withdrawCancelledOffer")]
+    fn withdraw_cancelled_offer_event(&self, #[indexed] offer_id: &u64);
 
     // Emitted whenever an offer is accepted
     #[event("acceptedOffer")]
     fn accepted_offer_event(
         &self,
-        #[indexed] index: &u64,
+        #[indexed] offer_id: &u64,
         #[indexed] buyer: &ManagedAddress,
         #[indexed] quantity: &BigUint,
     );

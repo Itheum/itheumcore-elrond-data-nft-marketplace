@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           38
+// Endpoints:                           42
 // Async Callback (empty):               1
-// Total number of exported functions:  40
+// Total number of exported functions:  44
 
 #![no_std]
 #![allow(internal_features)]
@@ -19,45 +19,48 @@ multiversx_sc_wasm_adapter::panic_handler!();
 multiversx_sc_wasm_adapter::endpoints! {
     data_market
     (
-        init => init
-        initializeContract => initialize_contract
-        setDiscounts => set_discounts
-        setFees => set_fees
-        setClaimsContract => set_claims_contract
-        setRoyaltiesClaimToken => set_royalties_claims_token
-        setClaimIsEnabled => set_claim_is_enabled
-        addAcceptedToken => add_accepted_token
-        addAcceptedPayment => add_accepted_payment
-        setIsPaused => set_is_paused
-        addOffer => add_offer
-        changeOfferPrice => change_offer_price
-        cancelOffer => cancel_offer
-        acceptOffer => accept_offer
-        setTreasuryAddress => set_treasury_address
-        setAdministrator => set_administrator
-        getOffers => offers
-        getUserListedOffers => user_listed_offers
-        getAcceptedTokens => accepted_tokens
-        getAcceptedTokenPayments => accepted_payments
-        getDiscountFeePercentageBuyer => discount_fee_percentage_buyer
-        getDiscountFeePercentageSeller => discount_fee_percentage_seller
-        getPercentageCutFromSeller => percentage_cut_from_seller
-        getPercentageCutFromBuyer => percentage_cut_from_buyer
-        getEmptyOfferIndexes => empty_offer_indexes
-        getHighestOfferIndex => highest_offer_index
-        getIsPaused => is_paused
-        getTreasuryAddress => treasury_address
-        getClaimsAddress => claims_address
-        getRoyaltiesClaimToken => royalties_claim_token
-        getAdministrator => administrator
-        getClaimIsEnabled => claim_is_enabled
-        getRequirements => view_requirements
-        viewPagedOffers => view_offers_paged
-        getUserTotalOffers => view_user_total_offers
-        viewUserListedOffers => view_user_listed_offers
-        viewOffers => view_offers
-        viewOffer => view_offer
-        numberOfOffers => view_number_of_offers
+        initializeContract
+        setDiscounts
+        setFees
+        setClaimsContract
+        setRoyaltiesClaimToken
+        setClaimIsEnabled
+        addAcceptedToken
+        removeAcceptedToken
+        addAcceptedPayment
+        removeAcceptedPayment
+        setIsPaused
+        addOffer
+        changeOfferPrice
+        cancelOffer
+        withdrawCancelledOffer
+        acceptOffer
+        setTreasuryAddress
+        setAdministrator
+        getOffers
+        getCancelledOffer
+        getUserListedOffers
+        getAcceptedTokens
+        getAcceptedTokenPayments
+        getDiscountFeePercentageBuyer
+        getDiscountFeePercentageSeller
+        getPercentageCutFromSeller
+        getPercentageCutFromBuyer
+        getLastValidOfferId
+        getIsPaused
+        getTreasuryAddress
+        getClaimsAddress
+        getRoyaltiesClaimToken
+        getAdministrator
+        getClaimIsEnabled
+        viewRequirements
+        viewPagedOffers
+        viewUserTotalOffers
+        viewUserListedOffers
+        viewCancelledOffers
+        viewOffers
+        viewOffer
+        viewNumberOfOffers
     )
 }
 
