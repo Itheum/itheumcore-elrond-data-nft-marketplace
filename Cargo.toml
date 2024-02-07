@@ -3,13 +3,17 @@ name = "data_market"
 version = "1.0.0"
 edition = "2021"
 publish = false
-authors = [ "Ovidiu Damian - Itheum","Bucur David - Itheum","Mark Paul - Itheum"]
+authors = [
+    "Ovidiu Damian - Itheum",
+    "Bucur David - Itheum",
+    "Mark Paul - Itheum",
+]
 
 [lib]
 path = "src/lib.rs"
 
 [dependencies.multiversx-sc]
-version = "0.39.7"
+version = "0.47.3"
 
 [dev-dependencies.multiversx-sc-scenario]
-version = "0.39.7"
+version = "0.47.3"

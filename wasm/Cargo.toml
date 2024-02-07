@@ -6,10 +6,9 @@
 
 [package]
 name = "data_market-wasm"
-version = "1.0.0"
+version = "0.0.0"
 edition = "2021"
 publish = false
-authors = [ "Ovidiu Damian - Itheum","Bucur David - Itheum","Mark Paul - Itheum"]
 
 [lib]
 crate-type = ["cdylib"]
@@ -26,8 +25,7 @@ overflow-checks = false
 path = ".."
 
 [dependencies.multiversx-sc-wasm-adapter]
-version = "0.39.7"
-
+version = "0.47.3"
 
 [workspace]
 members = ["."]
