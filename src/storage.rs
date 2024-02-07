@@ -73,26 +73,52 @@ impl<M: ManagedTypeApi> TopDecode for DataNftAttributes<M> {
 
 impl<M: ManagedTypeApi> NestedDecode for DataNftAttributes<M> {
     fn dep_decode<I: NestedDecodeInput>(input: &mut I) -> Result<Self, DecodeError> {
-        let data_stream_url = ManagedBuffer::dep_decode(input)?;
-        let data_preview_url = ManagedBuffer::dep_decode(input)?;
-        let data_marshal_url = ManagedBuffer::dep_decode(input)?;
-        let creator = ManagedAddress::dep_decode(input)?;
-        let creation_time = u64::dep_decode(input)?;
-        let title = ManagedBuffer::dep_decode(input)?;
-        let description = ManagedBuffer::dep_decode(input)?;
+        let data_stream_url: Result<ManagedBuffer<M>, _> = ManagedBuffer::dep_decode(input);
+        let creator: Result<ManagedAddress<M>, _> = ManagedAddress::dep_decode(input);
 
-        Result::Ok(DataNftAttributes {
-            data_stream_url,
-            data_preview_url,
-            data_marshal_url,
-            creator,
-            creation_time,
-            title,
-            description,
-        })
+        let mut data_stream_url_value = None;
+        let mut creator_value = None;
+
+        // Assign the decoded values if successful
+        if let Ok(value) = data_stream_url.into() {
+            data_stream_url_value = Some(value);
+        }
+
+        if let Ok(value) = creator.into() {
+            creator_value = Some(value);
+        }
+
+        if data_stream_url_value.is_some() && creator_value.is_some() {
+            return Result::Ok(DataNftAttributes {
+                data_stream_url: data_stream_url_value.unwrap(),
+                data_preview_url: ManagedBuffer::from(""),
+                data_marshal_url: ManagedBuffer::from(""),
+                creator: creator_value.unwrap(),
+                creation_time: u64::from(0u8),
+                title: ManagedBuffer::from(""),
+                description: ManagedBuffer::from(""),
+            });
+        } else {
+            let data_stream_url = ManagedBuffer::dep_decode(input)?;
+            let data_preview_url = ManagedBuffer::dep_decode(input)?;
+            let data_marshal_url = ManagedBuffer::dep_decode(input)?;
+            let creator = ManagedAddress::dep_decode(input)?;
+            let creation_time = u64::dep_decode(input)?;
+            let title = ManagedBuffer::dep_decode(input)?;
+            let description = ManagedBuffer::dep_decode(input)?;
+
+            Result::Ok(DataNftAttributes {
+                data_stream_url,
+                data_preview_url,
+                data_marshal_url,
+                creator,
+                creation_time,
+                title,
+                description,
+            })
+        }
     }
 }
-
 #[multiversx_sc::module]
 pub trait StorageModule {
     #[view(getOffers)]
