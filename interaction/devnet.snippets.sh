@@ -2,8 +2,8 @@ PROXY=https://devnet-gateway.multiversx.com
 CHAIN_ID="D"
 
 WALLET="./wallet.pem"
-SELLER="./wallet2.pem"
-BUYER="./wallet3.pem"
+SELLER="./wallet.pem"
+BUYER="./wallet2.pem"
 
 ADDRESS=$(mxpy data load --key=address-devnet)
 DEPLOY_TRANSACTION=$(mxpy data load --key=deployTransaction-devnet)
@@ -17,7 +17,7 @@ TOKEN_HEX="0x$(echo -n ${TOKEN} | xxd -p -u | tr -d '\n')"
 # --bytecode output-docker/data_market/data_market.wasm \
 deploy(){
     mxpy --verbose contract deploy \
-    --bytecode output-docker/data_market/data_market.wasm \
+    --bytecode output/data_market.wasm \
     --outfile deployOutput \
     --metadata-not-readable \
     --metadata-payable-by-sc \
@@ -275,7 +275,7 @@ addOffer(){
     # $6 = payment token amount
     # $7 = quantity (optional)
 
-    user_address="$(mxpy wallet pem-address $SELLER)"
+
     token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
     method="0x$(echo -n 'addOffer' | xxd -p -u | tr -d '\n')"
     payment_token_identifier="0x$(echo -n ${4} | xxd -p -u | tr -d '\n')"
@@ -299,7 +299,7 @@ cancelOffer(){
     --pem=${SELLER} \
     --gas-limit=6000000 \
     --function "cancelOffer" \
-    --arguments ${1} \
+    --arguments ${1} 1 00 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
