@@ -89,6 +89,7 @@ pub struct MarketPlaceRequirements<M: ManagedTypeApi> {
     pub discount_fee_percentage_seller: BigUint<M>,
     pub percentage_cut_from_buyer: BigUint<M>,
     pub percentage_cut_from_seller: BigUint<M>,
+    pub max_default_quantity: BigUint<M>,
 }
 #[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Clone, Debug, TypeAbi)]
 pub struct DataNftAttributes<M: ManagedTypeApi> {

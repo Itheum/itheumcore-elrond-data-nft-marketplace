@@ -3503,6 +3503,7 @@ fn views_test() {
                 discount_fee_percentage_seller: managed_biguint!(0),
                 percentage_cut_from_buyer: managed_biguint!(200u64),
                 percentage_cut_from_seller: managed_biguint!(200u64),
+                max_default_quantity: managed_biguint!(0),
             };
 
             let sc_req = sc.view_requirements();
