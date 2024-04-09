@@ -68,6 +68,9 @@ pub trait EventsModule {
         #[indexed] token_identifier: &EgldOrEsdtTokenIdentifier,
     );
 
+    #[event("setMaxDefaultQuantity")]
+    fn set_max_default_quantity_event(&self, #[indexed] max_default_quantity: &BigUint);
+
     // Emitted whenever a new offer is created
     #[event("addedOffer")]
     fn added_offer_event(&self, #[indexed] offer_id: &u64, #[indexed] offer: &Offer<Self::Api>);

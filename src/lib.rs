@@ -184,6 +184,14 @@ pub trait DataMarket:
         self.is_paused().set(is_paused);
     }
 
+    #[endpoint(setMaxDefaultQuantity)]
+    fn set_max_default_quantity(&self, max_default_quantity: BigUint) {
+        let caller = self.blockchain().get_caller();
+        self.require_is_privileged(&caller);
+        self.set_max_default_quantity_event(&max_default_quantity);
+        self.max_default_quantity().set(max_default_quantity);
+    }
+
     // Endpoint that will be callable by users to add a new offer.
     #[payable("*")]
     #[endpoint(addOffer)]
@@ -209,7 +217,9 @@ pub trait DataMarket:
             ERR_TOKEN_NOT_ACCEPTED
         );
 
-        let max_quantity = opt_max_quantity.into_option().unwrap_or(BigUint::zero());
+        let max_quantity = opt_max_quantity
+            .into_option()
+            .unwrap_or(self.max_default_quantity().get());
 
         require!(quantity > 0, ERR_QUANTITY_MUST_BE_POSITIVE);
         require!(data_nft.amount >= quantity, ERR_QUANTITY_TOO_HIGH);

@@ -155,6 +155,10 @@ pub trait StorageModule {
     #[storage_mapper("claims_address")]
     fn claims_address(&self) -> SingleValueMapper<ManagedAddress>;
 
+    #[view(getMaxDefaultQuantity)]
+    #[storage_mapper("max_default_quantity")]
+    fn max_default_quantity(&self) -> SingleValueMapper<BigUint>;
+
     #[view(getRoyaltiesClaimToken)]
     #[storage_mapper("royalties_accepted_token")]
     fn royalties_claim_token(&self) -> SingleValueMapper<TokenIdentifier>;
