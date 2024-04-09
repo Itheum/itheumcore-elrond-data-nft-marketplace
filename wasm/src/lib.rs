@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           42
+// Endpoints:                           43
 // Async Callback (empty):               1
-// Total number of exported functions:  44
+// Total number of exported functions:  45
 
 #![no_std]
 #![allow(internal_features)]
@@ -20,6 +20,7 @@ multiversx_sc_wasm_adapter::endpoints! {
     data_market
     (
         init => init
+        upgrade => upgrade
         initializeContract => initialize_contract
         setDiscounts => set_discounts
         setFees => set_fees

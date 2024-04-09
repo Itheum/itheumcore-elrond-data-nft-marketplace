@@ -8,12 +8,14 @@ use data_market::DataMarket;
 
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
+use multiversx_sc::contract_base::ContractBase;
+use multiversx_sc::sc_print;
 use multiversx_sc::storage::mappers::StorageClearable;
 use multiversx_sc::types::{
-    Address, EgldOrEsdtTokenIdentifier, EgldOrEsdtTokenPayment, EsdtLocalRole, EsdtTokenPayment,
-    ManagedVec, MultiValueEncoded,
+    Address, BigUint, EgldOrEsdtTokenIdentifier, EgldOrEsdtTokenPayment, EsdtLocalRole,
+    EsdtTokenData, EsdtTokenPayment, EsdtTokenType, ManagedBuffer, ManagedVec, MultiValueEncoded,
 };
-use multiversx_sc_scenario::multiversx_chain_vm::tx_mock::TxContextRef;
+
 use multiversx_sc_scenario::testing_framework::{BlockchainStateWrapper, ContractObjWrapper};
 use multiversx_sc_scenario::*;
 
@@ -1125,7 +1127,7 @@ fn value_setters_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(owner_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -1326,7 +1328,7 @@ fn add_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(first_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -1481,7 +1483,7 @@ fn add_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -2499,7 +2501,7 @@ fn accept_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(first_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3021,7 +3023,7 @@ fn views_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(first_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3083,7 +3085,7 @@ fn views_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3530,7 +3532,7 @@ fn change_offer_price_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3611,7 +3613,7 @@ fn change_offer_price_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3730,7 +3732,7 @@ fn accept_free_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3779,7 +3781,7 @@ fn accept_free_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3908,7 +3910,7 @@ fn accept_offer_with_egld() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),

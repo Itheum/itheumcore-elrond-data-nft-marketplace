@@ -142,7 +142,9 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
 
             match claim_is_enabled {
                 true => {
-                    if payment_token_id.is_egld() || (&payment_token_id != &self.royalties_claim_token().get()) {
+                    if payment_token_id.is_egld()
+                        || (&payment_token_id != &self.royalties_claim_token().get())
+                    {
                         self.send().direct(
                             &creator,
                             &payment_token.token_identifier,
