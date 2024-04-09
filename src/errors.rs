@@ -21,3 +21,4 @@ pub const ERR_MIN_AMOUNT_NOT_FILLED: &str = "Min amount not filled";
 pub const ERR_ADDRESS_NOT_PRIVILEGED: &str = "Address is not privileged";
 pub const ERR_MARKETPLACE_NOT_READY: &str = "Marketplace trade is not ready";
 pub const ERR_CONTRACT_PAUSED: &str = "Contract paused";
+pub const ERR_MAX_QUANTITY_EXCEEDED: &str = "Max quantity exceeded";

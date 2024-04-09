@@ -8,6 +8,7 @@ use crate::errors::ERR_CONTRACT_ALREADY_INITIALIZED;
 use crate::errors::ERR_CONTRACT_PAUSED;
 use crate::errors::ERR_DISCOUNTS_HIGHER_THAN_PERCENTAGE_CUTS;
 use crate::errors::ERR_FEES_CANNOT_BE_LOWER_THAN_DISCOUNTS;
+use crate::errors::ERR_MAX_QUANTITY_EXCEEDED;
 use crate::errors::ERR_MIN_AMOUNT_TOO_HIGH;
 use crate::errors::ERR_NOT_ENOUGH_QUANTITY;
 use crate::errors::ERR_ONLY_OFFER_OWNER;
@@ -192,7 +193,8 @@ pub trait DataMarket:
         payment_token_nonce: u64,
         payment_token_fee: BigUint,
         min_amount_for_seller: BigUint,
-        opt_quantity: OptionalValue<BigUint>,
+        quantity: BigUint,
+        opt_max_quantity: OptionalValue<BigUint>,
     ) {
         self.require_sc_ready_to_trade();
         let caller = self.blockchain().get_caller();
@@ -207,18 +209,18 @@ pub trait DataMarket:
             ERR_TOKEN_NOT_ACCEPTED
         );
 
-        let existing_quantity = opt_quantity.into_option().unwrap_or(BigUint::from(1u64));
+        let max_quantity = opt_max_quantity.into_option().unwrap_or(BigUint::zero());
 
-        require!(existing_quantity > 0, ERR_QUANTITY_MUST_BE_POSITIVE);
-        require!(data_nft.amount >= existing_quantity, ERR_QUANTITY_TOO_HIGH);
+        require!(quantity > 0, ERR_QUANTITY_MUST_BE_POSITIVE);
+        require!(data_nft.amount >= quantity, ERR_QUANTITY_TOO_HIGH);
 
         let maximum_fee = self.accepted_payments().get(&payment_token_id).unwrap();
 
         require!(
-            &data_nft.amount % &existing_quantity == 0,
+            &data_nft.amount % &quantity == 0,
             ERR_QUANTITY_MUST_BE_A_DIVISOR
         );
-        data_nft.amount = &data_nft.amount / &existing_quantity;
+        data_nft.amount = &data_nft.amount / &quantity;
 
         require!(
             payment_token_fee <= &maximum_fee * &data_nft.amount,
@@ -243,7 +245,8 @@ pub trait DataMarket:
             offered_token: data_nft,
             wanted_token: payment_token,
             min_amount_for_seller,
-            quantity: existing_quantity,
+            quantity,
+            max_quantity,
         };
         self.added_offer_event(&offer_id, &offer);
         self.offers().insert(offer_id, offer);
@@ -364,6 +367,11 @@ pub trait DataMarket:
         let caller = self.blockchain().get_caller();
 
         let mut offer = self.try_get_offer(offer_id);
+
+        if offer.max_quantity > BigUint::zero() {
+            require!(quantity <= offer.max_quantity, ERR_MAX_QUANTITY_EXCEEDED);
+        }
+
         let payment = self.call_value().egld_or_single_esdt();
 
         // SFT token data and attributes
