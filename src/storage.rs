@@ -1,5 +1,4 @@
 use multiversx_sc::codec::{NestedDecodeInput, TopDecodeInput};
-
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
@@ -9,14 +8,55 @@ pub enum OfferType {
     FreeOffer,
 }
 
-#[derive(Clone, NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
+#[derive(Clone, TopEncode, NestedEncode, TypeAbi)]
 pub struct Offer<M: ManagedTypeApi> {
     pub owner: ManagedAddress<M>,
     pub offered_token: EsdtTokenPayment<M>,
     pub wanted_token: EgldOrEsdtTokenPayment<M>,
     pub min_amount_for_seller: BigUint<M>,
     pub quantity: BigUint<M>,
+    pub max_quantity: BigUint<M>,
 }
+
+impl<M: ManagedTypeApi> TopDecode for Offer<M> {
+    fn top_decode<I>(input: I) -> Result<Self, DecodeError>
+    where
+        I: TopDecodeInput,
+    {
+        let mut buffer = input.into_nested_buffer();
+        Self::dep_decode(&mut buffer)
+    }
+}
+
+impl<M: ManagedTypeApi> NestedDecode for Offer<M> {
+    fn dep_decode<I: NestedDecodeInput>(input: &mut I) -> Result<Self, DecodeError> {
+        let owner = ManagedAddress::dep_decode(input)?;
+        let offered_token = EsdtTokenPayment::dep_decode(input)?;
+        let wanted_token = EgldOrEsdtTokenPayment::dep_decode(input)?;
+        let min_amount_for_seller = BigUint::dep_decode(input)?;
+        let quantity = BigUint::dep_decode(input)?;
+
+        let max_quantity = if !input.is_depleted() {
+            BigUint::dep_decode(input)?
+        } else {
+            BigUint::zero()
+        };
+
+        if !input.is_depleted() {
+            return Err(DecodeError::INPUT_TOO_LONG);
+        }
+
+        Result::Ok(Offer {
+            owner,
+            offered_token,
+            wanted_token,
+            min_amount_for_seller,
+            quantity,
+            max_quantity,
+        })
+    }
+}
+
 #[derive(
     ManagedVecItem,
     Clone,
@@ -49,6 +89,7 @@ pub struct MarketPlaceRequirements<M: ManagedTypeApi> {
     pub discount_fee_percentage_seller: BigUint<M>,
     pub percentage_cut_from_buyer: BigUint<M>,
     pub percentage_cut_from_seller: BigUint<M>,
+    pub max_default_quantity: BigUint<M>,
 }
 #[derive(TopEncode, NestedEncode, PartialEq, Clone, Debug, TypeAbi)]
 pub struct DataNftAttributes<M: ManagedTypeApi> {
@@ -145,6 +186,10 @@ pub trait StorageModule {
     #[view(getClaimsAddress)]
     #[storage_mapper("claims_address")]
     fn claims_address(&self) -> SingleValueMapper<ManagedAddress>;
+
+    #[view(getMaxDefaultQuantity)]
+    #[storage_mapper("max_default_quantity")]
+    fn max_default_quantity(&self) -> SingleValueMapper<BigUint>;
 
     #[view(getRoyaltiesClaimToken)]
     #[storage_mapper("royalties_accepted_token")]

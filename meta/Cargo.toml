@@ -15,8 +15,8 @@ authors = [
 path = ".."
 
 [dependencies.multiversx-sc]
-version = "0.48.0"
+version = "0.47.8"
 
 [dependencies.multiversx-sc-meta]
-version = "0.48.0"
+version = "0.47.8"
 default-features = false
