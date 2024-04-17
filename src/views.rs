@@ -136,6 +136,7 @@ pub trait ViewsModule: crate::storage::StorageModule {
             wanted_token_amount: offer.wanted_token.amount * (fee + &BigUint::from(10000u64))
                 / BigUint::from(10000u64),
             quantity: offer.quantity,
+            max_quantity_per_address: offer.max_quantity,
         }
     }
 }

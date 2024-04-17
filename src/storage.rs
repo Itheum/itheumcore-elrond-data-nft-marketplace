@@ -78,6 +78,7 @@ pub struct OfferOut<M: ManagedTypeApi> {
     pub wanted_token_nonce: u64,
     pub wanted_token_amount: BigUint<M>,
     pub quantity: BigUint<M>,
+    pub max_quantity_per_address: BigUint<M>,
 }
 
 #[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Clone, Debug, TypeAbi)]
@@ -190,6 +191,14 @@ pub trait StorageModule {
     #[view(getMaxDefaultQuantity)]
     #[storage_mapper("max_default_quantity")]
     fn max_default_quantity(&self) -> SingleValueMapper<BigUint>;
+
+    #[view(getMaxQuantityPerAddress)]
+    #[storage_mapper("max_quantity_per_address")]
+    fn max_quantity_per_address(
+        &self,
+        address: &ManagedAddress,
+        offer_id: u64,
+    ) -> SingleValueMapper<BigUint>;
 
     #[view(getRoyaltiesClaimToken)]
     #[storage_mapper("royalties_accepted_token")]

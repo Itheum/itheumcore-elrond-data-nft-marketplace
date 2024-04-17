@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           44
+// Endpoints:                           46
 // Async Callback (empty):               1
-// Total number of exported functions:  46
+// Total number of exported functions:  48
 
 #![no_std]
 #![allow(internal_features)]
@@ -20,6 +20,7 @@ multiversx_sc_wasm_adapter::endpoints! {
     data_market
     (
         init => init
+        upgrade => upgrade
         initializeContract => initialize_contract
         setDiscounts => set_discounts
         setFees => set_fees
@@ -53,6 +54,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getTreasuryAddress => treasury_address
         getClaimsAddress => claims_address
         getMaxDefaultQuantity => max_default_quantity
+        getMaxQuantityPerAddress => max_quantity_per_address
         getRoyaltiesClaimToken => royalties_claim_token
         getAdministrator => administrator
         getClaimIsEnabled => claim_is_enabled

@@ -1821,6 +1821,7 @@ fn cancel_offer_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(1u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let view_cancelled_offer = sc
@@ -1942,6 +1943,7 @@ fn cancel_offer_test() {
                 wanted_token_nonce: 0u64,
                 wanted_token_amount: managed_biguint!(204u64),
                 quantity: managed_biguint!(5u64),
+                max_quantity_per_address: managed_biguint!(0u64),
             };
 
             let view_offer = sc.view_offer(3u64).unwrap();
@@ -1999,6 +2001,7 @@ fn cancel_offer_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(3u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let correct_remaining_offer: OfferOut<DebugApi> = OfferOut {
@@ -2011,6 +2014,7 @@ fn cancel_offer_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(2u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let view_remained_offer = sc.view_offer(3u64).unwrap();
@@ -2076,6 +2080,7 @@ fn cancel_offer_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(5u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let is_listed = sc
@@ -3207,6 +3212,7 @@ fn views_test() {
                 wanted_token_nonce: 0u64,
                 wanted_token_amount: managed_biguint!(204u64),
                 quantity: managed_biguint!(1u64),
+                max_quantity_per_address: managed_biguint!(0u64),
             };
 
             let offer_out = sc.view_offer(1u64).unwrap();
@@ -3263,6 +3269,7 @@ fn views_test() {
                 wanted_token_nonce: 0u64,
                 wanted_token_amount: managed_biguint!(204u64),
                 quantity: managed_biguint!(1u64),
+                max_quantity_per_address: managed_biguint!(0u64),
             };
 
             let offer_mock_2 = OfferOut::<DebugApi> {
@@ -3275,6 +3282,7 @@ fn views_test() {
                 wanted_token_nonce: 0u64,
                 wanted_token_amount: managed_biguint!(204u64),
                 quantity: managed_biguint!(4u64),
+                max_quantity_per_address: managed_biguint!(0u64),
             };
 
             let offers = sc.view_paged_offers(0u64, 1u64, OptionalValue::None);
@@ -3455,6 +3463,7 @@ fn views_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(1u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let offers_4 = sc.view_user_listed_offers(&managed_address!(first_user_address));
@@ -3480,6 +3489,7 @@ fn views_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(4u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let offers_5 = sc.view_user_listed_offers(&managed_address!(second_user_address));

@@ -383,8 +383,13 @@ pub trait DataMarket:
 
         let mut offer = self.try_get_offer(offer_id);
 
+        let address_limit = self.max_quantity_per_address(&offer.owner, offer_id).get();
+
         if offer.max_quantity > BigUint::zero() {
-            require!(quantity <= offer.max_quantity, ERR_MAX_QUANTITY_EXCEEDED);
+            require!(
+                &quantity + &address_limit <= offer.max_quantity,
+                ERR_MAX_QUANTITY_EXCEEDED
+            );
         }
 
         let payment = self.call_value().egld_or_single_esdt();
