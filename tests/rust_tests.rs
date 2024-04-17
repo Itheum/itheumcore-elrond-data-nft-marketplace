@@ -2714,14 +2714,14 @@ fn accept_offer_test() {
             &setup.contract_wrapper,
             SFT_TICKER,
             1,
-            &rust_biguint!(2u64),
+            &rust_biguint!(3u64),
             |sc| {
                 sc.add_offer(
                     managed_token_id_wrapped!(TOKEN_ID),
                     0u64,
                     managed_biguint!(100),
                     managed_biguint!(0),
-                    managed_biguint!(2u64),
+                    managed_biguint!(3u64),
                     OptionalValue::Some(managed_biguint!(1)),
                 );
             },
@@ -2737,10 +2737,10 @@ fn accept_offer_test() {
             &(&rust_biguint!(100)
                 + ((&rust_biguint!(100) * rust_biguint!(150u64)) / rust_biguint!(10000u64))), // buyer needs to send with % fee included
             |sc| {
-                sc.accept_offer(5u64, managed_biguint!(2u64));
+                sc.accept_offer(5u64, managed_biguint!(1u64));
             },
         )
-        .assert_user_error("Max quantity exceeded");
+        .assert_ok();
 
     b_wrapper
         .execute_esdt_transfer(
@@ -2754,7 +2754,7 @@ fn accept_offer_test() {
                 sc.accept_offer(5u64, managed_biguint!(1u64));
             },
         )
-        .assert_ok()
+        .assert_user_error("Max quantity exceeded");
 }
 
 #[test] // Tests whether the user gets the royaties tokens but not in the claims contract
