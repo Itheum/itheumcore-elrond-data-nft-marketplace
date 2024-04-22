@@ -54,7 +54,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getTreasuryAddress => treasury_address
         getClaimsAddress => claims_address
         getMaxDefaultQuantity => max_default_quantity
-        getMaxQuantityPerAddress => max_quantity_per_address
+        getBoughtPerAddress => bought_per_address
         getRoyaltiesClaimToken => royalties_claim_token
         getAdministrator => administrator
         getClaimIsEnabled => claim_is_enabled

@@ -192,9 +192,9 @@ pub trait StorageModule {
     #[storage_mapper("max_default_quantity")]
     fn max_default_quantity(&self) -> SingleValueMapper<BigUint>;
 
-    #[view(getMaxQuantityPerAddress)]
-    #[storage_mapper("max_quantity_per_address")]
-    fn max_quantity_per_address(
+    #[view(getBoughtPerAddress)]
+    #[storage_mapper("bought_per_address")]
+    fn bought_per_address(
         &self,
         address: &ManagedAddress,
         offer_id: u64,
