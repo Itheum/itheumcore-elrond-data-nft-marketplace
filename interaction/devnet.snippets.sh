@@ -97,6 +97,22 @@ setTreasuryAddress(){
     --send || return
 }
 
+
+setMaxDefaultQuantity(){
+
+    # $1 = max default quantity
+
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setMaxDefaultQuantity" \
+    --arguments $1 \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+}
+
 setAdministrator(){
     # $1 = administrator address
 
@@ -247,7 +263,8 @@ addOffer(){
     # $4 = payment token identifier
     # $5 = payment token nonce
     # $6 = payment token amount
-    # $7 = quantity (optional)
+    # $7 = quantity 
+    # $8 = max quantity per address
 
     user_address="$(mxpy wallet pem-address $SELLER)"
     token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
@@ -259,7 +276,7 @@ addOffer(){
     --pem=${SELLER} \
     --gas-limit=10000000 \
     --function "ESDTNFTTransfer" \
-    --arguments $token_identifier $2 $3 ${ADDRESS} $method $payment_token_identifier $5 $6 $7 \
+    --arguments $token_identifier $2 $3 ${ADDRESS} $method $payment_token_identifier $5 $6 $7 $8 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
