@@ -68,6 +68,7 @@ pub trait DataMarket:
     #[upgrade]
     fn upgrade(&self) {
         self.is_paused().set(true);
+        self.pause_toggle_event(&true);
     }
 
     // Endpoint that will be used by the contract owner to initialize the contract.
