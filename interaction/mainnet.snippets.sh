@@ -303,3 +303,20 @@ setClaimIsDisabledMainnet(){
     --ledger-address-index 0 \
     --send || return
 }
+
+# V2.0.0
+setMaxDefaultQuantityMainnet(){
+
+    # $1 = max default quantity
+
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --gas-limit=6000000 \
+    --function "setMaxDefaultQuantity" \
+    --arguments $1 \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
+    --send || return
+}

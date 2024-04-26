@@ -125,21 +125,6 @@ setTreasuryAddress(){
     --send || return
 }
 
-setMaxDefaultQuantity(){
-
-    # $1 = max default quantity
-
-    mxpy --verbose contract call ${ADDRESS} \
-    --recall-nonce \
-    --pem=${WALLET} \
-    --gas-limit=6000000 \
-    --function "setMaxDefaultQuantity" \
-    --arguments $1 \
-    --proxy ${PROXY} \
-    --chain ${CHAIN_ID} \
-    --send || return
-}
-
 setAdministrator(){
     # $1 = administrator address
 
@@ -360,6 +345,22 @@ acceptOffer(){
     --gas-limit=10000000 \
     --function "ESDTTransfer" \
     --arguments ${TOKEN_HEX} $1 $method $2 $3 \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+}
+
+# V2.0.0
+setMaxDefaultQuantity(){
+
+    # $1 = max default quantity
+
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setMaxDefaultQuantity" \
+    --arguments $1 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
