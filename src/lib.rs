@@ -406,8 +406,14 @@ pub trait DataMarket:
             &offer.offered_token.token_identifier,
             offer.offered_token.token_nonce,
         );
-        // SFT token attributes
-        let token_attributes = token_data.decode_attributes::<DataNftAttributes<Self::Api>>();
+
+        let mut creator = token_data.clone().creator;
+        match token_data.try_decode_attributes::<DataNftAttributes<Self::Api>>() {
+            Ok(token_attributes) => {
+                creator = token_attributes.creator;
+            }
+            Err(_) => {}
+        };
 
         require!(&caller != &offer.owner, ERR_CANNOT_ACCEPT_OWN_OFFER);
 
@@ -459,7 +465,7 @@ pub trait DataMarket:
             fee_from_buyer,
             seller,
             fee_from_seller,
-            token_attributes.creator,
+            &creator,
             creator_royalties,
             min_amount_for_seller,
         );
