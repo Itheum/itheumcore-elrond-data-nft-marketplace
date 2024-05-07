@@ -6,6 +6,10 @@ ADDRESS=$(mxpy data load --key=address-mainnet)
 TOKEN="ITHEUM-df6f26"
 TOKEN_HEX="0x$(echo -n ${TOKEN} | xxd -p -u | tr -d '\n')"
 
+# to deploy from last reprodubible build, we need to change 
+# --bytecode output/data_market.wasm \
+# to 
+# --bytecode output-docker/data_market/data_market.wasm \
 deployLedgerMainnet(){
     mxpy --verbose contract deploy \
     --bytecode output-docker/data_market/data_market.wasm \
@@ -28,10 +32,33 @@ deployLedgerMainnet(){
     mxpy data store --key=deployTransaction-mainnet --value=${TRANSACTION}
 }
 
+# any change to code or property requires a full upgrade 
+# always check if you are deploy via a reprodubible build and that the code hash is the same before and after upgrade (that is if you are only changing props and not code.. for code, the RB will be different)
+# if only changing props, you can't just "append" new props. you have to add the old ones again and then add a new prop you need. i.e. it's not append, it's a whole reset
+# for upgrade, --outfile deployOutput is not needed
+# in below code example we added --metadata-payable to add PAYABLE to the prop of the SC and removed --metadata-not-readable to make it READABLE
+upgrade(){
+    mxpy --verbose contract upgrade ${ADDRESS} \
+    --bytecode output-docker/data_market/data_market.wasm \
+    --metadata-not-readable \
+    --metadata-payable-by-sc \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --gas-limit 150000000 \
+    --recall-nonce \
+    --ledger \
+    --ledger-address-index 0 \
+    --send || return
+}
+
 # if you interact without calling deploy(), then you need to 1st run this to restore the vars from data
 restoreDeployDataMainnet() {
   TRANSACTION=$(mxpy data parse --file="./interaction/deploy-mainnet.interaction.json" --expression="data['emittedTransactionHash']")
   ADDRESS=$(mxpy data parse --file="./interaction/deploy-mainnet.interaction.json" --expression="data['contractAddress']")
+
+  # after we upgraded to mxpy 8.1.2, mxpy data parse seems to load the ADDRESS correctly but it breaks when used below with a weird "Bad address" error
+  # so, we just hardcode the ADDRESS here. Just make sure you use the "data['contractAddress'] from the latest deploy-devnet.interaction.json file
+  ADDRESS="erd1qqqqqqqqqqqqqpgqay2r64l9nhhvmaqw4qanywfd0954w2m3c77qm7drxc"
 }
 
 initializeContractMainnet(){
@@ -165,6 +192,23 @@ addAcceptedTokenMainnet(){
     --send || return
 }
 
+removeAcceptedTokenMainnet(){
+    # $1 = token identifier
+
+    token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
+
+     mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --gas-limit=6000000 \
+    --function "removeAcceptedToken" \
+    --arguments $token_identifier \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
+    --send || return
+}
+
 addAcceptedPaymentMainnet(){
     # $1 =token identifier  
     # $2 = maximum payment fee per SFT
@@ -253,6 +297,23 @@ setClaimIsDisabledMainnet(){
     --gas-limit=6000000 \
     --function "setClaimIsEnabled" \
     --arguments 0 \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
+    --send || return
+}
+
+# V2.0.0
+setMaxDefaultQuantityMainnet(){
+
+    # $1 = max default quantity
+
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --gas-limit=6000000 \
+    --function "setMaxDefaultQuantity" \
+    --arguments $1 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --ledger \

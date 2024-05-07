@@ -8,12 +8,13 @@ use data_market::DataMarket;
 
 use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc::codec::Empty;
+use multiversx_sc::contract_base::ContractBase;
+use multiversx_sc::sc_print;
 use multiversx_sc::storage::mappers::StorageClearable;
 use multiversx_sc::types::{
-    Address, EgldOrEsdtTokenIdentifier, EgldOrEsdtTokenPayment, EsdtLocalRole, EsdtTokenPayment,
-    ManagedVec, MultiValueEncoded,
+    Address, BigUint, EgldOrEsdtTokenIdentifier, EgldOrEsdtTokenPayment, EsdtLocalRole,
+    EsdtTokenData, EsdtTokenPayment, EsdtTokenType, ManagedBuffer, ManagedVec, MultiValueEncoded,
 };
-use multiversx_sc_scenario::multiversx_chain_vm::tx_mock::TxContextRef;
 use multiversx_sc_scenario::testing_framework::{BlockchainStateWrapper, ContractObjWrapper};
 use multiversx_sc_scenario::*;
 
@@ -708,7 +709,8 @@ fn requirements_test() {
                     0u64,
                     managed_biguint!(100),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(2u64)),
+                    managed_biguint!(2u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -741,7 +743,8 @@ fn requirements_test() {
                     0u64,
                     managed_biguint!(100),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(2u64)),
+                    managed_biguint!(2u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -772,7 +775,8 @@ fn requirements_test() {
                     0u64,
                     managed_biguint!(100),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(2u64)),
+                    managed_biguint!(2u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -802,7 +806,8 @@ fn requirements_test() {
                     0u64,
                     managed_biguint!(100),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(2u64)),
+                    managed_biguint!(2u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -832,7 +837,8 @@ fn requirements_test() {
                     0u64,
                     managed_biguint!(100),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(2u64)),
+                    managed_biguint!(2u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -1117,6 +1123,7 @@ fn value_setters_test() {
                     ),
                     quantity: managed_biguint!(1u64),
                     min_amount_for_seller: managed_biguint!(0u64),
+                    max_quantity: managed_biguint!(0),
                 };
                 sc.offers().insert(1u64, offer);
             },
@@ -1125,7 +1132,7 @@ fn value_setters_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(owner_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -1139,6 +1146,7 @@ fn value_setters_test() {
                 ),
                 quantity: managed_biguint!(1u64),
                 min_amount_for_seller: managed_biguint!(0u64),
+                max_quantity: managed_biguint!(0),
             };
             assert_eq!(sc.offers().len(), 1usize);
 
@@ -1210,7 +1218,8 @@ fn add_offer_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0u64),
-                    OptionalValue::Some(managed_biguint!(1u64)),
+                    managed_biguint!(1u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -1240,6 +1249,7 @@ fn add_offer_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
+                    managed_biguint!(10u64),
                     OptionalValue::None,
                 );
             },
@@ -1259,6 +1269,7 @@ fn add_offer_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
+                    managed_biguint!(10u64),
                     OptionalValue::None,
                 );
             },
@@ -1285,6 +1296,7 @@ fn add_offer_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
+                    managed_biguint!(10u64),
                     OptionalValue::None,
                 );
             },
@@ -1326,20 +1338,21 @@ fn add_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(first_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
                     1u64,
-                    managed_biguint!(10u64),
+                    managed_biguint!(1u64),
                 ),
                 wanted_token: EgldOrEsdtTokenPayment::new(
                     managed_token_id_wrapped!(TOKEN_ID),
                     0,
                     managed_biguint!(200u64),
                 ),
-                quantity: managed_biguint!(1u64),
+                quantity: managed_biguint!(10u64),
                 min_amount_for_seller: managed_biguint!(0),
+                max_quantity: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -1364,7 +1377,8 @@ fn add_offer_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(0u64)),
+                    managed_biguint!(0u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -1383,7 +1397,8 @@ fn add_offer_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(21u64)),
+                    managed_biguint!(21u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -1402,7 +1417,8 @@ fn add_offer_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(3u64)),
+                    managed_biguint!(3u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -1421,7 +1437,8 @@ fn add_offer_test() {
                     0u64,
                     managed_biguint!(1u64),
                     managed_biguint!(1_000),
-                    OptionalValue::Some(managed_biguint!(4u64)),
+                    managed_biguint!(4u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -1440,7 +1457,8 @@ fn add_offer_test() {
                     0u64,
                     managed_biguint!(1u64),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(4u64)),
+                    managed_biguint!(4u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -1481,7 +1499,7 @@ fn add_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -1495,6 +1513,7 @@ fn add_offer_test() {
                 ),
                 quantity: managed_biguint!(4u64),
                 min_amount_for_seller: managed_biguint!(0),
+                max_quantity: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&2u64).unwrap();
@@ -1612,6 +1631,7 @@ fn cancel_offer_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
+                    managed_biguint!(1u64),
                     OptionalValue::None,
                 );
             },
@@ -1631,7 +1651,8 @@ fn cancel_offer_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(4u64)),
+                    managed_biguint!(4u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -1800,6 +1821,7 @@ fn cancel_offer_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(1u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let view_cancelled_offer = sc
@@ -1902,7 +1924,8 @@ fn cancel_offer_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(5u64)),
+                    managed_biguint!(5u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -1920,6 +1943,7 @@ fn cancel_offer_test() {
                 wanted_token_nonce: 0u64,
                 wanted_token_amount: managed_biguint!(204u64),
                 quantity: managed_biguint!(5u64),
+                max_quantity_per_address: managed_biguint!(0u64),
             };
 
             let view_offer = sc.view_offer(3u64).unwrap();
@@ -1977,6 +2001,7 @@ fn cancel_offer_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(3u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let correct_remaining_offer: OfferOut<DebugApi> = OfferOut {
@@ -1989,6 +2014,7 @@ fn cancel_offer_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(2u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let view_remained_offer = sc.view_offer(3u64).unwrap();
@@ -2054,6 +2080,7 @@ fn cancel_offer_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(5u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let is_listed = sc
@@ -2205,7 +2232,8 @@ fn accept_offer_test() {
                     0u64,
                     managed_biguint!(100),
                     managed_biguint!(99),
-                    OptionalValue::Some(managed_biguint!(2u64)),
+                    managed_biguint!(2u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -2388,6 +2416,7 @@ fn accept_offer_test() {
                     0u64,
                     managed_biguint!(1_000),
                     managed_biguint!(0),
+                    managed_biguint!(1u64),
                     OptionalValue::None,
                 );
             },
@@ -2491,7 +2520,8 @@ fn accept_offer_test() {
                     0u64,
                     managed_biguint!(100),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(2u64)),
+                    managed_biguint!(2u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -2499,7 +2529,7 @@ fn accept_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(first_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -2513,6 +2543,7 @@ fn accept_offer_test() {
                 ),
                 quantity: managed_biguint!(2u64),
                 min_amount_for_seller: managed_biguint!(0),
+                max_quantity: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&3u64).unwrap();
@@ -2617,7 +2648,8 @@ fn accept_offer_test() {
                     0u64,
                     managed_biguint!(0),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(1u64)),
+                    managed_biguint!(1u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -2675,6 +2707,54 @@ fn accept_offer_test() {
             description: managed_buffer!(SFT_NAME),
         }),
     );
+
+    b_wrapper
+        .execute_esdt_transfer(
+            first_user_address,
+            &setup.contract_wrapper,
+            SFT_TICKER,
+            1,
+            &rust_biguint!(3u64),
+            |sc| {
+                sc.add_offer(
+                    managed_token_id_wrapped!(TOKEN_ID),
+                    0u64,
+                    managed_biguint!(100),
+                    managed_biguint!(0),
+                    managed_biguint!(3u64),
+                    OptionalValue::Some(managed_biguint!(1)),
+                );
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            third_user_address,
+            &setup.contract_wrapper,
+            TOKEN_ID,
+            0,
+            &(&rust_biguint!(100)
+                + ((&rust_biguint!(100) * rust_biguint!(150u64)) / rust_biguint!(10000u64))), // buyer needs to send with % fee included
+            |sc| {
+                sc.accept_offer(5u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_ok();
+
+    b_wrapper
+        .execute_esdt_transfer(
+            third_user_address,
+            &setup.contract_wrapper,
+            TOKEN_ID,
+            0,
+            &(&rust_biguint!(100)
+                + ((&rust_biguint!(100) * rust_biguint!(150u64)) / rust_biguint!(10000u64))), // buyer needs to send with % fee included
+            |sc| {
+                sc.accept_offer(5u64, managed_biguint!(1u64));
+            },
+        )
+        .assert_user_error("Max quantity exceeded");
 }
 
 #[test] // Tests whether the user gets the royaties tokens but not in the claims contract
@@ -2807,7 +2887,8 @@ fn accept_offer_non_accepted_royalties_token_id_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(1u64)),
+                    managed_biguint!(1u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -2868,7 +2949,8 @@ fn accept_offer_non_accepted_royalties_token_id_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(1u64)),
+                    managed_biguint!(1u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -2990,6 +3072,7 @@ fn views_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
+                    managed_biguint!(1u64),
                     OptionalValue::None,
                 );
             },
@@ -3021,7 +3104,7 @@ fn views_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(first_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3035,6 +3118,7 @@ fn views_test() {
                 ),
                 quantity: managed_biguint!(1u64),
                 min_amount_for_seller: managed_biguint!(0),
+                max_quantity: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3059,7 +3143,8 @@ fn views_test() {
                     0u64,
                     managed_biguint!(200u64),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(4u64)),
+                    managed_biguint!(4u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -3083,7 +3168,7 @@ fn views_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3097,6 +3182,7 @@ fn views_test() {
                 ),
                 quantity: managed_biguint!(4u64),
                 min_amount_for_seller: managed_biguint!(0),
+                max_quantity: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&2u64).unwrap();
@@ -3126,6 +3212,7 @@ fn views_test() {
                 wanted_token_nonce: 0u64,
                 wanted_token_amount: managed_biguint!(204u64),
                 quantity: managed_biguint!(1u64),
+                max_quantity_per_address: managed_biguint!(0u64),
             };
 
             let offer_out = sc.view_offer(1u64).unwrap();
@@ -3182,6 +3269,7 @@ fn views_test() {
                 wanted_token_nonce: 0u64,
                 wanted_token_amount: managed_biguint!(204u64),
                 quantity: managed_biguint!(1u64),
+                max_quantity_per_address: managed_biguint!(0u64),
             };
 
             let offer_mock_2 = OfferOut::<DebugApi> {
@@ -3194,6 +3282,7 @@ fn views_test() {
                 wanted_token_nonce: 0u64,
                 wanted_token_amount: managed_biguint!(204u64),
                 quantity: managed_biguint!(4u64),
+                max_quantity_per_address: managed_biguint!(0u64),
             };
 
             let offers = sc.view_paged_offers(0u64, 1u64, OptionalValue::None);
@@ -3374,6 +3463,7 @@ fn views_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(1u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let offers_4 = sc.view_user_listed_offers(&managed_address!(first_user_address));
@@ -3399,6 +3489,7 @@ fn views_test() {
                     wanted_token_nonce: 0u64,
                     wanted_token_amount: managed_biguint!(204u64),
                     quantity: managed_biguint!(4u64),
+                    max_quantity_per_address: managed_biguint!(0u64),
                 };
 
                 let offers_5 = sc.view_user_listed_offers(&managed_address!(second_user_address));
@@ -3424,6 +3515,7 @@ fn views_test() {
                 discount_fee_percentage_seller: managed_biguint!(0),
                 percentage_cut_from_buyer: managed_biguint!(200u64),
                 percentage_cut_from_seller: managed_biguint!(200u64),
+                max_default_quantity: managed_biguint!(0),
             };
 
             let sc_req = sc.view_requirements();
@@ -3522,7 +3614,8 @@ fn change_offer_price_test() {
                     0u64,
                     managed_biguint!(100),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(2u64)),
+                    managed_biguint!(2u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -3530,7 +3623,7 @@ fn change_offer_price_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3544,6 +3637,7 @@ fn change_offer_price_test() {
                 ),
                 quantity: managed_biguint!(2u64),
                 min_amount_for_seller: managed_biguint!(0),
+                max_quantity: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3603,7 +3697,8 @@ fn change_offer_price_test() {
                     0u64,
                     managed_biguint!(10_0001), // 10 NFTs * 10_000 each = 10_0000 max payment
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(1u64)),
+                    managed_biguint!(1u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -3611,7 +3706,7 @@ fn change_offer_price_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3625,6 +3720,7 @@ fn change_offer_price_test() {
                 ),
                 quantity: managed_biguint!(2u64),
                 min_amount_for_seller: managed_biguint!(0),
+                max_quantity: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3722,7 +3818,8 @@ fn accept_free_offer_test() {
                     0u64,
                     managed_biguint!(100),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(2u64)),
+                    managed_biguint!(2u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -3730,7 +3827,7 @@ fn accept_free_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3744,6 +3841,7 @@ fn accept_free_offer_test() {
                 ),
                 quantity: managed_biguint!(2u64),
                 min_amount_for_seller: managed_biguint!(0),
+                max_quantity: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3779,7 +3877,7 @@ fn accept_free_offer_test() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3793,6 +3891,7 @@ fn accept_free_offer_test() {
                 ),
                 quantity: managed_biguint!(2u64),
                 min_amount_for_seller: managed_biguint!(0),
+                max_quantity: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3900,7 +3999,8 @@ fn accept_offer_with_egld() {
                     0u64,
                     managed_biguint!(1_000),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(2u64)),
+                    managed_biguint!(2u64),
+                    OptionalValue::None,
                 );
             },
         )
@@ -3908,7 +4008,7 @@ fn accept_offer_with_egld() {
 
     b_wrapper
         .execute_query(&setup.contract_wrapper, |sc| {
-            let offer = Offer::<TxContextRef> {
+            let offer = Offer::<DebugApi> {
                 owner: managed_address!(second_user_address),
                 offered_token: EsdtTokenPayment::new(
                     managed_token_id!(SFT_TICKER),
@@ -3922,6 +4022,7 @@ fn accept_offer_with_egld() {
                 ),
                 quantity: managed_biguint!(2u64),
                 min_amount_for_seller: managed_biguint!(0),
+                max_quantity: managed_biguint!(0),
             };
 
             let offer_from_storage = sc.offers().get(&1u64).unwrap();
@@ -3963,8 +4064,9 @@ fn accept_offer_with_egld() {
                     0u64,
                     managed_biguint!(1_000),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(1u64)),
-                );
+                    managed_biguint!(1u64),
+                    OptionalValue::None,
+                )
             },
         )
         .assert_ok();
@@ -4010,7 +4112,8 @@ fn accept_offer_with_egld() {
                     0u64,
                     managed_biguint!(1_000),
                     managed_biguint!(0),
-                    OptionalValue::Some(managed_biguint!(1u64)),
+                    managed_biguint!(1u64),
+                    OptionalValue::None,
                 );
             },
         )

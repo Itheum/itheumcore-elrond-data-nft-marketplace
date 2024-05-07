@@ -36,6 +36,24 @@ deploy(){
     mxpy data store --key=deployTransaction-devnet --value=${TRANSACTION}
 }
 
+# any change to code or property requires a full upgrade 
+# always check if you are deploy via a reprodubible build and that the code hash is the same before and after upgrade (that is if you are only changing props and not code.. for code, the RB will be different)
+# if only changing props, you can't just "append" new props. you have to add the old ones again and then add a new prop you need. i.e. it's not append, it's a whole reset
+# for upgrade, --outfile deployOutput is not needed
+# in below code example we added --metadata-payable to add PAYABLE to the prop of the SC and removed --metadata-not-readable to make it READABLE
+upgrade(){
+    mxpy --verbose contract upgrade ${ADDRESS} \
+    --bytecode output-docker/data_market/data_market.wasm \
+    --metadata-not-readable \
+    --metadata-payable-by-sc \
+    --pem ${WALLET} \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --gas-limit 150000000 \
+    --recall-nonce \
+    --send || return
+}
+
 # if you interact without calling deploy(), then you need to 1st run this to restore the vars from data
 restoreDeployData() {
   TRANSACTION=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['emittedTransactionHash']")
@@ -158,7 +176,6 @@ addAcceptedToken(){
 
     token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
 
-
      mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
@@ -168,14 +185,28 @@ addAcceptedToken(){
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
+}
 
+removeAcceptedToken(){
+    # $1 = token identifier
+
+    token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
+
+     mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "removeAcceptedToken" \
+    --arguments $token_identifier \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
 }
 
 addAcceptedPayment(){
     # $1 = token identifier
     # $2 = maximum payment fee per SFT
  
-
     token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
 
       mxpy --verbose contract call ${ADDRESS} \
@@ -205,7 +236,6 @@ removeAcceptedPayment(){
     --send || return
 }
 
-
 setClaimsContract(){
     # $1 = claims contract address
 
@@ -220,7 +250,6 @@ setClaimsContract(){
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
-
 }
 
 setRoyaltiesClaimToken(){
@@ -237,8 +266,6 @@ setRoyaltiesClaimToken(){
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
-
-
 }
 
 setClaimIsEnabled(){
@@ -265,7 +292,6 @@ setClaimIsDisabled(){
     --send || return
 }
 
-
 addOffer(){
     # $1 = token identifier
     # $2 = sft nonce
@@ -273,9 +299,10 @@ addOffer(){
     # $4 = payment token identifier
     # $5 = payment token nonce
     # $6 = payment token amount
-    # $7 = quantity (optional)
+    # $7 = quantity 
+    # $8 = max quantity per address
 
-    user_address="$(mxpy wallet pem-address $SELLER)"
+
     token_identifier="0x$(echo -n ${1} | xxd -p -u | tr -d '\n')"
     method="0x$(echo -n 'addOffer' | xxd -p -u | tr -d '\n')"
     payment_token_identifier="0x$(echo -n ${4} | xxd -p -u | tr -d '\n')"
@@ -285,7 +312,7 @@ addOffer(){
     --pem=${SELLER} \
     --gas-limit=10000000 \
     --function "ESDTNFTTransfer" \
-    --arguments $token_identifier $2 $3 ${ADDRESS} $method $payment_token_identifier $5 $6 $7 \
+    --arguments $token_identifier $2 $3 ${ADDRESS} $method $payment_token_identifier $5 $6 $7 $8 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
@@ -299,7 +326,7 @@ cancelOffer(){
     --pem=${SELLER} \
     --gas-limit=6000000 \
     --function "cancelOffer" \
-    --arguments ${1} \
+    --arguments ${1} 1 00 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
@@ -318,6 +345,22 @@ acceptOffer(){
     --gas-limit=10000000 \
     --function "ESDTTransfer" \
     --arguments ${TOKEN_HEX} $1 $method $2 $3 \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+}
+
+# V2.0.0
+setMaxDefaultQuantity(){
+
+    # $1 = max default quantity
+
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setMaxDefaultQuantity" \
+    --arguments $1 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return

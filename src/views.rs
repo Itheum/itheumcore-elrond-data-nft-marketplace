@@ -24,6 +24,7 @@ pub trait ViewsModule: crate::storage::StorageModule {
             discount_fee_percentage_seller: self.discount_fee_percentage_seller().get(),
             percentage_cut_from_buyer: self.percentage_cut_from_buyer().get(),
             percentage_cut_from_seller: self.percentage_cut_from_seller().get(),
+            max_default_quantity: self.max_default_quantity().get(),
         }
     }
 
@@ -135,6 +136,7 @@ pub trait ViewsModule: crate::storage::StorageModule {
             wanted_token_amount: offer.wanted_token.amount * (fee + &BigUint::from(10000u64))
                 / BigUint::from(10000u64),
             quantity: offer.quantity,
+            max_quantity_per_address: offer.max_quantity,
         }
     }
 }

@@ -1,0 +1,45 @@
+use data_market::{storage::DataNftAttributes, *};
+use multiversx_sc::{
+    contract_base::ContractBase,
+    types::{
+        BigUint, EsdtTokenData, EsdtTokenType, ManagedAddress, ManagedBuffer, ManagedVec, SCResult,
+    },
+};
+use multiversx_sc_scenario::{api::SingleTxApi, assert_sc_error, managed_biguint};
+
+#[test]
+#[should_panic]
+fn decode_unit_tests() {
+    let token_with_few_attibutes = EsdtTokenData::<SingleTxApi>{
+        token_type: EsdtTokenType::NonFungible,
+        amount: BigUint::from(1u64),
+        frozen:false,
+        hash: ManagedBuffer::from(b"hash"),
+        name: ManagedBuffer::from(b"Name"),
+        attributes: ManagedBuffer::from(b"AAAE6GV5SkJJam9pTXpNMllqYzFZbVk0TlRVNU5HWmtNMlU1TTJOaE9XSTNPR1ZtTmpjNU4yTTRPVEExTVRaak1ETTJNVFkwTXpFMElpd2lRaUk2SWpJd1pHSmxaR1psTXpSa09EWXhaV0kzTVdaaU5ERmhOemN5WmpGaE16a3hZbVkwTm1Sak0yWTJaVEE0TUdNM1pqRTJaakUyWm1RNVpUVmhZMlZtWkRNaUxDSkRJam9pTURaaU5XUmtZamxoTmpBMU56Y3lOV1E1Tnpka01EZGhPR1V3WlRGbVptSm1NVFV3WWpkbU5UWTNaR05pT1daaU1tRTBPVGhsWkRjNU9UUXpOR013WkNJc0lrUWlPaUkxTmpZMFpEazFORGhsTkRKa01Ua3daVFk0Wm1VMU56RXpNRE16TnpWbU9UY3pOR0ZpTkdZeU1tUmxNREpqT0RKalpUZGpaV1U1TnpFeE1HTmpNemswWWpFeE5UUmtNbVExTURSa056Z3dPVEppWkRaaU9URm1ZMk15TXpjM05HRTFaV1EzT0dWa05qRTVNV1UyT0RBNVpURmlObVl3TnpCa01HRmpOemd5TXpNMllUY3pNV0l6TjJReVptUTFOemhpTXpobE1ESTRZek15WVRNeU5ETTBPR0kzWW1Ka05tUmlZVFUwWVdaaVpqTXpOemMwWVRKa056TTNaREUyTWprMFptTmhaVFJrWm1NM01tVmtNMlEwTUdVMk56STVNMlkwTVRnME9EQTRNR1ZsTmpGbU1tVTBaakJrWmpNNU0yVTFaR1ZsWldFME1EUmlabU5qTWpnMFpqUmlZbVl5WldRMFlqYzVOV1JrWVdZeE9ESmxPV1V4WkRjNE5UQmpNakF4WldZeVltUTRNVEkyTWpoa05tTXlaVFEzWlRka016UTNPR0V6T0ROaFpUVXpNV1k1Tm1NM1l6ZzNPVGxpTVRRMU5qVmpORGN5TlRsa01HTm1NakF3WVdKak1XUm1OamswTTJKaU1tRmlZV00yWmpReFlqUXlObU16WldKbVpUbGtNbUkwTmpVd1pUbGlNamMxWWpjMll6Z3dOekkzTVRJMk1qRm1OekpoWXpRd09HUXhabUV5TTJZeVpqaGhNRGcyWTJRNE1UbGhNREkwWkRnNU9HTTNNRE00TlRBMFpUbGxOV1JsTXpCbU1HTXlObUprTldZME0yTXpNVFJoTXpjNVlqazJZMll3TURRMU9USmhaalE0TmpWak9HWTBaamsyWlRCbE1EaGpaamxpWTJReU56SmpOVFk1WkRNNE1XUXdaRGRqT0dJM1pUUTNOMkV3WWpJMFpXUmpOalZpWldVeE5UVm1abVkyTVRabE1tWmlZVEF6WlRJNVlqVTFOalV3TVRrd1ltVmxOR0l4T0dGbU1HRmhPR1kzWXpnNU1UQWlMQ0pGSWpvaVlUSTBObUl5T1RZNU0yTm1NMlZsWm1Vd1kyVTJOV1JqT0RjNVpHUXdNekUxTURBME0yVmtNR0k1TlRoaU1UUmtPRFl3Tm1aaE56QTRNemN4Tm1ZeFpUazNObUpsT0RWbE1Ua3pNemc1WXpBNU16VXdPRFZrWWprMVl6UmhOVFJrWW1VNU16QTVNVGMxT1dJd016VTJaamxpTW1WaE4ySTRaR1JtWmpNMk1EVWlmUT09TU1lztGSExgxYQFmdJ0pBW6qtXdV2NCGrBRrfJnIdFwAAAAAAAAAKAAAAAAAAAAy"),
+        creator: ManagedAddress::zero(),
+        royalties: managed_biguint!(5u64),
+        uris: ManagedVec::from_single_item(ManagedBuffer::from(b"https://ipfs.io/ipfs/QmX"))
+    };
+
+    let _attributes =
+        token_with_few_attibutes.decode_attributes::<DataNftAttributes<SingleTxApi>>();
+}
+
+// #[test]
+// fn decode_unit_test_success(){
+//         let token_with_extra_attribute = EsdtTokenData::<SingleTxApi> {
+//     token_type: EsdtTokenType::NonFungible,
+//     amount: BigUint::from(1u64),
+//     frozen:false,
+//     hash: ManagedBuffer::from(b"hash"),
+//     name: ManagedBuffer::from(b"Name"),
+//     attributes: ManagedBuffer::from(b"AAAE6GV5SkJJam9pTXpNMllqYzFZbVk0TlRVNU5HWmtNMlU1TTJOaE9XSTNPR1ZtTmpjNU4yTTRPVEExTVRaak1ETTJNVFkwTXpFMElpd2lRaUk2SWpJd1pHSmxaR1psTXpSa09EWXhaV0kzTVdaaU5ERmhOemN5WmpGaE16a3hZbVkwTm1Sak0yWTJaVEE0TUdNM1pqRTJaakUyWm1RNVpUVmhZMlZtWkRNaUxDSkRJam9pTURaaU5XUmtZamxoTmpBMU56Y3lOV1E1Tnpka01EZGhPR1V3WlRGbVptSm1NVFV3WWpkbU5UWTNaR05pT1daaU1tRTBPVGhsWkRjNU9UUXpOR013WkNJc0lrUWlPaUkxTmpZMFpEazFORGhsTkRKa01Ua3daVFk0Wm1VMU56RXpNRE16TnpWbU9UY3pOR0ZpTkdZeU1tUmxNREpqT0RKalpUZGpaV1U1TnpFeE1HTmpNemswWWpFeE5UUmtNbVExTURSa056Z3dPVEppWkRaaU9URm1ZMk15TXpjM05HRTFaV1EzT0dWa05qRTVNV1UyT0RBNVpURmlObVl3TnpCa01HRmpOemd5TXpNMllUY3pNV0l6TjJReVptUTFOemhpTXpobE1ESTRZek15WVRNeU5ETTBPR0kzWW1Ka05tUmlZVFUwWVdaaVpqTXpOemMwWVRKa056TTNaREUyTWprMFptTmhaVFJrWm1NM01tVmtNMlEwTUdVMk56STVNMlkwTVRnME9EQTRNR1ZsTmpGbU1tVTBaakJrWmpNNU0yVTFaR1ZsWldFME1EUmlabU5qTWpnMFpqUmlZbVl5WldRMFlqYzVOV1JrWVdZeE9ESmxPV1V4WkRjNE5UQmpNakF4WldZeVltUTRNVEkyTWpoa05tTXlaVFEzWlRka016UTNPR0V6T0ROaFpUVXpNV1k1Tm1NM1l6ZzNPVGxpTVRRMU5qVmpORGN5TlRsa01HTm1NakF3WVdKak1XUm1OamswTTJKaU1tRmlZV00yWmpReFlqUXlObU16WldKbVpUbGtNbUkwTmpVd1pUbGlNamMxWWpjMll6Z3dOekkzTVRJMk1qRm1OekpoWXpRd09HUXhabUV5TTJZeVpqaGhNRGcyWTJRNE1UbGhNREkwWkRnNU9HTTNNRE00TlRBMFpUbGxOV1JsTXpCbU1HTXlObUprTldZME0yTXpNVFJoTXpjNVlqazJZMll3TURRMU9USmhaalE0TmpWak9HWTBaamsyWlRCbE1EaGpaamxpWTJReU56SmpOVFk1WkRNNE1XUXdaRGRqT0dJM1pUUTNOMkV3WWpJMFpXUmpOalZpWldVeE5UVm1abVkyTVRabE1tWmlZVEF6WlRJNVlqVTFOalV3TVRrd1ltVmxOR0l4T0dGbU1HRmhPR1kzWXpnNU1UQWlMQ0pGSWpvaVlUSTBObUl5T1RZNU0yTm1NMlZsWm1Vd1kyVTJOV1JqT0RjNVpHUXdNekUxTURBME0yVmtNR0k1TlRoaU1UUmtPRFl3Tm1aaE56QTRNemN4Tm1ZeFpUazNObUpsT0RWbE1Ua3pNemc1WXpBNU16VXdPRFZrWWprMVl6UmhOVFJrWW1VNU16QTVNVGMxT1dJd016VTJaamxpTW1WaE4ySTRaR1JtWmpNMk1EVWlmUT09AAAAUGh0dHBzOi8vaXRoZXVtYXBpLmNvbS9wcm9ncmFtUmVhZGluZ1ByZXZpZXcvNDhkN2IwMjAtZWFiMC0xMWVhLWE0NjYtMDMzNGZmMGU4YmYyAAAAOGh0dHBzOi8vYXBpLml0aGV1bWNsb3VkLXN0Zy5jb20vZGF0YW1hcnNoYWxhcGkvcm91dGVyL3YxTU1lztGSExgxYQFmdJ0pBW6qtXdV2NCGrBRrfJnIdFwAAAAAZcS"),
+//     creator: ManagedAddress::zero(),
+//     royalties: managed_biguint!(5u64),
+//     uris: ManagedVec::from_single_item(ManagedBuffer::from(b"randuri.com"))
+// };
+
+// let _attributes = token_with_extra_attribute.decode_attributes::<DataNftAttributes<SingleTxApi>>();
+
+// }

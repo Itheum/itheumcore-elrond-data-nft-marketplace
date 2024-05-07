@@ -119,12 +119,12 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
         fee_from_buyer: BigUint,
         seller: ManagedAddress,
         fee_from_seller: BigUint,
-        creator: ManagedAddress,
+        creator: &ManagedAddress,
         creator_royalties: BigUint,
         min_amount_for_seller: BigUint,
     ) {
         // If the creator setup royalties and is not the offer owner he can get the royalties
-        if creator != seller && &creator_royalties > &BigUint::zero() {
+        if creator != &seller && &creator_royalties > &BigUint::zero() {
             require!(
                 &min_amount_for_seller
                     <= &(&buyer_payment - &fee_from_buyer - &fee_from_seller - &creator_royalties),
@@ -142,7 +142,9 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
 
             match claim_is_enabled {
                 true => {
-                    if payment_token_id.is_egld() || (&payment_token_id != &self.royalties_claim_token().get()) {
+                    if payment_token_id.is_egld()
+                        || (&payment_token_id != &self.royalties_claim_token().get())
+                    {
                         self.send().direct(
                             &creator,
                             &payment_token.token_identifier,
@@ -157,7 +159,7 @@ pub trait OfferAcceptUtils: crate::storage::StorageModule {
                         );
 
                         self.claims_proxy(self.claims_address().get())
-                            .add_claim(&creator, ClaimType::Royalty)
+                            .add_claim(creator, ClaimType::Royalty)
                             .with_esdt_transfer(claim_payment)
                             .transfer_execute();
                     }
